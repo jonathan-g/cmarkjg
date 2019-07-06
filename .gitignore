@@ -1,12 +1,15 @@
 *.so
 *.o
 *.dll
+*.Rproj
 .DS_Store
-.Rproj.user
+.Rproj.user/
+.RData
 .Rhistory
 src/*.a
 src/*/*.a
 src/*.o
 src/*.so
+src/*.dll
 inst/doc
 readme.html

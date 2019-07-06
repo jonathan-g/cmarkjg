@@ -16,10 +16,10 @@
 #' @export
 #' @name extensions
 #' @rdname extensions
-#' @useDynLib cmarkjg R_list_extensions
+#' @useDynLib cmarkjg R_list_extensions_jg
 #' @examples print(list_extensions())
 list_extensions <- function(){
-  .Call(R_list_extensions, PACKAGE="cmarkjg")
+  .Call(R_list_extensions_jg, PACKAGE="cmarkjg")
 }
 
 get_extensions <- function(x){
