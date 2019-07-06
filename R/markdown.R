@@ -12,11 +12,11 @@
 #' depending on their position. Moreover `--` will be rendered as -- (en-dash), `---` will be
 #' rendered as --- (em-dash), and `...` will be rendered as ... (ellipses).
 #'
-#' @useDynLib commonmark R_render_markdown
-#' @aliases commonmark markdown
+#' @useDynLib cmarkjg R_render_markdown
+#' @aliases cmark_jg commonmark markdown
 #' @export
-#' @rdname commonmark
-#' @name commonmark
+#' @rdname cmark_jg
+#' @name cmark_jg
 #' @param text Markdown text
 #' @param sourcepos Include source position attribute in output.
 #' @param hardbreaks Treat newlines as hard line breaks. If this option is specified, hard wrapping is disabled
@@ -36,45 +36,45 @@
 markdown_html <- function(text, hardbreaks = FALSE, smart = FALSE, normalize = FALSE, sourcepos = FALSE, extensions = FALSE){
   text <- enc2utf8(paste(text, collapse="\n"))
   extensions <- get_extensions(extensions)
-  .Call(R_render_markdown, text, 1L, sourcepos, hardbreaks, smart, normalize, 0L, extensions)
+  .Call(R_render_markdown, text, 1L, sourcepos, hardbreaks, smart, normalize, 0L, extensions, PACKAGE="cmarkjg")
 }
 
 #' @export
-#' @rdname commonmark
+#' @rdname cmark_jg
 markdown_xml <- function(text, hardbreaks = FALSE, smart = FALSE, normalize = FALSE, sourcepos = FALSE, extensions = FALSE){
   text <- enc2utf8(paste(text, collapse="\n"))
   extensions <- get_extensions(extensions)
-  .Call(R_render_markdown, text, 2L, sourcepos, hardbreaks, smart, normalize, 0L, extensions)
+  .Call(R_render_markdown, text, 2L, sourcepos, hardbreaks, smart, normalize, 0L, extensions, PACKAGE="cmarkjg")
 }
 
 #' @export
-#' @rdname commonmark
+#' @rdname cmark_jg
 markdown_man <- function(text, hardbreaks = FALSE, smart = FALSE, normalize = FALSE, width = 0, extensions = FALSE){
   text <- enc2utf8(paste(text, collapse="\n"))
   extensions <- get_extensions(extensions)
-  .Call(R_render_markdown, text, 3L, FALSE, hardbreaks, smart, normalize, as.integer(width), extensions)
+  .Call(R_render_markdown, text, 3L, FALSE, hardbreaks, smart, normalize, as.integer(width), extensions, PACKAGE="cmarkjg")
 }
 
 #' @export
-#' @rdname commonmark
+#' @rdname cmark_jg
 markdown_commonmark <- function(text, hardbreaks = FALSE, smart = FALSE, normalize = FALSE, width = 0, extensions = FALSE){
   text <- enc2utf8(paste(text, collapse="\n"))
   extensions <- get_extensions(extensions)
-  .Call(R_render_markdown, text, 4L, FALSE, hardbreaks, smart, normalize, as.integer(width), extensions)
+  .Call(R_render_markdown, text, 4L, FALSE, hardbreaks, smart, normalize, as.integer(width), extensions, PACKAGE="cmarkjg")
 }
 
 #' @export
-#' @rdname commonmark
+#' @rdname cmark_jg
 markdown_text <- function(text, hardbreaks = FALSE, smart = FALSE, normalize = FALSE, width = 0, extensions = FALSE){
   text <- enc2utf8(paste(text, collapse="\n"))
   extensions <- get_extensions(extensions)
-  .Call(R_render_markdown, text, 5L, FALSE, hardbreaks, smart, normalize, as.integer(width), extensions)
+  .Call(R_render_markdown, text, 5L, FALSE, hardbreaks, smart, normalize, as.integer(width), extensions, PACKAGE="cmarkjg")
 }
 
 #' @export
-#' @rdname commonmark
+#' @rdname cmark_jg
 markdown_latex <- function(text, hardbreaks = FALSE, smart = FALSE, normalize = FALSE, width = 0, extensions = FALSE){
   text <- enc2utf8(paste(text, collapse="\n"))
   extensions <- get_extensions(extensions)
-  .Call(R_render_markdown, text, 6L, FALSE, hardbreaks, smart, normalize, as.integer(width), extensions)
+  .Call(R_render_markdown, text, 6L, FALSE, hardbreaks, smart, normalize, as.integer(width), extensions, PACKAGE="cmarkjg")
 }

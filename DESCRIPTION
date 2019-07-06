@@ -1,7 +1,7 @@
-Package: commonmark
+Package: cmarkjg
 Type: Package
 Title: High Performance CommonMark and Github Markdown Rendering in R
-Version: 1.7
+Version: 1.7.9000
 Authors@R: c(
     person("Jeroen", "Ooms", ,"jeroen@berkeley.edu", role = c("aut", "cre")),
     person("John MacFarlane", role = "cph", comment = "Author of cmark"))
@@ -17,5 +17,5 @@ Suggests:
     curl,
     testthat,
     xml2
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.1
 Roxygen: list(markdown = TRUE)

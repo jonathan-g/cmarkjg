@@ -1,4 +1,4 @@
 library(testthat)
-library(commonmark)
+library(cmarkjg)
 
-test_check("commonmark")
+test_check("cmarkjg")

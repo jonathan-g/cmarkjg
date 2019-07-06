@@ -12,8 +12,8 @@ LIBCMARK = cmark/cmark.o cmark/node.o cmark/iterator.o cmark/blocks.o cmark/inli
 	extensions/autolink.o extensions/core-extensions.o extensions/ext_scanners.o \
 	extensions/strikethrough.o extensions/table.o extensions/tagfilter.o
 
-PKG_LIBS = -Lcmark -lstatcmark
-STATLIB = cmark/libstatcmark.a
+PKG_LIBS = -Lcmark -lstatcmarkjg
+STATLIB = cmark/libstatcmarkjg.a
 
 # For development only
 all: clean
