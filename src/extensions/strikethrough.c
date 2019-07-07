@@ -80,12 +80,12 @@ done:
   return res;
 }
 
-static const char *get_type_string(cmark_syntax_extension *extension,
-                                   cmark_node *node) {
+static const char *get_type_string(const cmark_syntax_extension *extension,
+                                   const cmark_node *node) {
   return node->type == CMARK_NODE_STRIKETHROUGH ? "strikethrough" : "<unknown>";
 }
 
-static int can_contain(cmark_syntax_extension *extension, cmark_node *node,
+static int can_contain(const cmark_syntax_extension *extension, const cmark_node *node,
                        cmark_node_type child_type) {
   if (node->type != CMARK_NODE_STRIKETHROUGH)
     return false;

@@ -17,6 +17,8 @@ void cmark_release_plugins(void);
 CMARK_GFM_EXPORT
 cmark_llist *cmark_list_syntax_extensions(cmark_mem *mem);
 
+const cmark_llist *cmark_get_first_syntax_extension(void);
+
 #ifdef __cplusplus
 }
 #endif

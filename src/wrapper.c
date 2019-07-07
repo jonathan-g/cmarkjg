@@ -40,7 +40,9 @@ static char* print_document(cmark_node *document, writer_format writer, int opti
   }
 }
 
-SEXP R_render_markdown(SEXP text, SEXP format, SEXP sourcepos, SEXP hardbreaks, SEXP smart, SEXP normalize, SEXP width, SEXP extensions) {
+SEXP R_render_markdown(SEXP text, SEXP format, SEXP sourcepos, SEXP hardbreaks,
+                       SEXP smart, SEXP max_strikethrough, SEXP normalize,
+                       SEXP width, SEXP extensions) {
 
   /* input validation */
   if(!Rf_isString(text))
@@ -53,17 +55,26 @@ SEXP R_render_markdown(SEXP text, SEXP format, SEXP sourcepos, SEXP hardbreaks, 
     Rf_error("Argument 'hardbreaks' must be logical.");
   if(!Rf_isLogical(smart))
     Rf_error("Argument 'smart' must be logical.");
+  if(!Rf_isLogical(max_strikethrough))
+    Rf_error("Argument 'max_strikethrough' must be logical.");
   if(!Rf_isLogical(normalize))
     Rf_error("Argument 'normalize' must be logical.");
   if(!Rf_isInteger(width))
     Rf_error("Argument 'width' must be integer.");
 
   /* combine options */
-  int options = CMARK_OPT_DEFAULT;
-  options += Rf_asLogical(sourcepos) * CMARK_OPT_SOURCEPOS;
-  options += Rf_asLogical(hardbreaks) * CMARK_OPT_HARDBREAKS;
-  options += Rf_asLogical(smart) * CMARK_OPT_SMART;
-  options += Rf_asLogical(normalize) * CMARK_OPT_NORMALIZE;
+  int options = CMARK_OPT_DEFAULT | CMARK_OPT_STRIKETHROUGH_DOUBLE_TILDE;
+  if (Rf_asLogical(max_strikethrough))
+    options &= ~CMARK_OPT_STRIKETHROUGH_DOUBLE_TILDE;
+  if (Rf_asLogical(sourcepos))
+    options |= CMARK_OPT_SOURCEPOS;
+  if (Rf_asLogical(hardbreaks))
+    options |= CMARK_OPT_HARDBREAKS;
+  if (Rf_asLogical(smart))
+    options |= CMARK_OPT_SMART;
+  if (Rf_asLogical(normalize))
+    options |= CMARK_OPT_NORMALIZE;
+
 
   /* Prevent filtering embedded resources: https://github.com/github/cmark-gfm#security */
   options += CMARK_OPT_UNSAFE;
@@ -72,9 +83,10 @@ SEXP R_render_markdown(SEXP text, SEXP format, SEXP sourcepos, SEXP hardbreaks, 
   SEXP input = STRING_ELT(text, 0);
   cmark_parser *parser = cmark_parser_new(options);
   for(int i = 0; i < Rf_length(extensions); i++){
-    cmark_syntax_extension *syntax_extension = cmark_find_syntax_extension(CHAR(STRING_ELT(extensions, i)));
+    const char * ext_name = CHAR(STRING_ELT(extensions, i));
+    cmark_syntax_extension *syntax_extension = cmark_find_syntax_extension(ext_name);
     if(!syntax_extension)
-      Rf_error("Failed to find load 'table' extension");
+      Rf_error("Failed to find load '%s' extension", ext_name);
     cmark_parser_attach_syntax_extension(parser, syntax_extension);
   }
   cmark_parser_feed(parser, CHAR(input), LENGTH(input));

@@ -4,14 +4,17 @@
 
 static unsigned UID_superscript = 0;
 
-static const char * compatible_extensions[] = {
-  "superscript",
-  "strikethrough"
+typedef struct ext_reg_s {
+  const char * name;
+  unsigned uid;
+} ext_reg;
+
+static ext_reg compatible_extensions[] = {
+  {"superscript", 0},
+  {"strikethrough", 0}
 };
 
 static const size_t n_compat = sizeof(compatible_extensions) / sizeof(compatible_extensions[0]);
-
-static unsigned compatible_extension_ids[n_compat];
 
 static cmark_node *match(cmark_syntax_extension *self, cmark_parser *parser,
                          cmark_node *parent, unsigned char character,
@@ -57,7 +60,7 @@ static delimiter *insert(cmark_syntax_extension *self, cmark_parser *parser,
   if (opener->inl_text->as.literal.len != closer->inl_text->as.literal.len)
     goto done;
 
-  if (!cmark_node_set_type(superscript, CMARK_NODE_CUSTOM))
+  if (!cmark_node_set_type(superscript, CMARK_NODE_CUSTOM_INLINE))
     goto done;
 
   cmark_node_set_syntax_extension(superscript, self);
@@ -88,18 +91,15 @@ done:
   return res;
 }
 
-static const char *get_type_string(cmark_syntax_extension *extension,
-                                   cmark_node *node) {
-  return (node->type == CMARK_NODE_CUSTOM  &&
-          node->extension->uid == UID_superscript) ? "superscript" : "<unknown>";
+static const char *get_type_string(const cmark_syntax_extension *extension,
+                                   const cmark_node *node) {
+  return (node->type == CMARK_NODE_CUSTOM_INLINE  &&
+          cmark_syntax_extension_get_uid(node->extension) == UID_superscript) ?
+          "superscript" : "<unknown>";
 }
 
-static int can_contain(cmark_syntax_extension *extension, cmark_node *node,
+static int can_contain(const cmark_syntax_extension *extension, const cmark_node *node,
                        cmark_node_type child_type) {
-  if (node->type == CMARK_NODE_STRIKETHROUGH ||
-      node->type == CMARK_NODE_CUSTOM && ( node->extension->uid == UID_superscript))
-    return false;
-
   return CMARK_NODE_TYPE_INLINE_P(child_type);
 }
 
@@ -153,23 +153,23 @@ static void plaintext_render(cmark_syntax_extension *extension,
 
 static bool contain_test(unsigned id) {
   for (int i = 0; i < n_compat; i++) {
-    if (id == compatible_extension_ids[i])
+    if (id == compatible_extensions[i].uid)
       return true;
   }
   return false;
 }
 
-static void postreg_callback(cmark_syntax_extension *self) {
-  for (i = 0; i < n_compat; i++) {
-    const cmark_syntax_extension *ext;
-    ext = cmark_find_syntax_extension(compatible_extensions[i]);
+static void postreg_callback(const cmark_syntax_extension *self) {
+  for (int i = 0; i < n_compat; i++) {
+    cmark_syntax_extension *ext;
+    ext = cmark_find_syntax_extension(compatible_extensions[i].name);
     if (ext != NULL) {
-      compatible_extension_ids[i] = ext->uid;
+      compatible_extensions[i].uid = cmark_syntax_extension_get_uid(ext);
     }
   }
 }
 
-cmark_syntax_extension *create_strikethrough_extension(void) {
+cmark_syntax_extension *create_superscript_extension(void) {
   cmark_syntax_extension *ext = cmark_syntax_extension_new("superscript");
   cmark_llist *special_chars = NULL;
 
@@ -181,6 +181,8 @@ cmark_syntax_extension *create_strikethrough_extension(void) {
   cmark_syntax_extension_set_html_render_func(ext, html_render);
   cmark_syntax_extension_set_plaintext_render_func(ext, plaintext_render);
 
+  cmark_syntax_extension_set_post_reg_callback_func(ext, postreg_callback);
+
   cmark_syntax_extension_set_match_inline_func(ext, match);
   cmark_syntax_extension_set_inline_from_delim_func(ext, insert);
 
@@ -190,7 +192,7 @@ cmark_syntax_extension *create_strikethrough_extension(void) {
 
   cmark_syntax_extension_set_emphasis(ext, 1);
 
-  UID_superscript = ext->uid;
+  UID_superscript = cmark_syntax_extension_get_uid(ext);
 
   return ext;
 }

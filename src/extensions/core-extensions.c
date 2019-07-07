@@ -1,6 +1,7 @@
-#include "cmark-gfm-core-extensions.h"
+#include "cmark-jg-core-extensions.h"
 #include "autolink.h"
 #include "strikethrough.h"
+#include "superscript.h"
 #include "table.h"
 #include "tagfilter.h"
 #include "registry.h"
@@ -13,14 +14,20 @@ static int core_extensions_registration(cmark_plugin *plugin) {
   cmark_plugin_register_syntax_extension(plugin, create_autolink_extension());
   cmark_plugin_register_syntax_extension(plugin, create_tagfilter_extension());
 
-  cmark_plugin_register_syntax_extension(plugin, create_superscript_extension());
+  cmark_plugin_register_syntax_extension(plugin,
+                                         create_superscript_extension());
 
-  const cmark_llist * ext = cmark_get_first_syntax_extension();
-  while(ext) {
-    if (ext->post_reg_callback_func) {
-      ext->post_reg_callback_func(ext);
+  const cmark_llist * ptr = cmark_get_first_syntax_extension();
+  while(ptr) {
+    cmark_syntax_extension *ext = ptr->data;
+    if (ext) {
+      cmark_post_reg_callback_func f =
+        cmark_syntax_extension_get_post_reg_callback_func(ext);
+      if (f) {
+        f(ext);
+      }
     }
-    ext <- ext->next;
+    ptr = ptr->next;
   }
 
   return 1;

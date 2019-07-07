@@ -129,6 +129,16 @@ void cmark_syntax_extension_set_postprocess_func(cmark_syntax_extension *extensi
   extension->postprocess_func = func;
 }
 
+void cmark_syntax_extension_set_post_reg_callback_func(cmark_syntax_extension *extension,
+                                                      cmark_post_reg_callback_func func) {
+  extension->post_reg_callback_func = func;
+}
+
+cmark_post_reg_callback_func
+  cmark_syntax_extension_get_post_reg_callback_func(const cmark_syntax_extension *extension) {
+  return extension->post_reg_callback_func;
+}
+
 void cmark_syntax_extension_set_private(cmark_syntax_extension *extension,
                                         void *priv,
                                         cmark_free_func free_func) {
@@ -136,7 +146,7 @@ void cmark_syntax_extension_set_private(cmark_syntax_extension *extension,
   extension->free_function = free_func;
 }
 
-void *cmark_syntax_extension_get_private(cmark_syntax_extension *extension) {
+void *cmark_syntax_extension_get_private(const cmark_syntax_extension *extension) {
     return extension->priv;
 }
 
@@ -153,4 +163,8 @@ void cmark_syntax_extension_set_opaque_free_func(cmark_syntax_extension *extensi
 void cmark_syntax_extension_set_commonmark_escape_func(cmark_syntax_extension *extension,
                                                        cmark_commonmark_escape_func func) {
   extension->commonmark_escape_func = func;
+}
+
+unsigned cmark_syntax_extension_get_uid(const cmark_syntax_extension *extension) {
+  return extension->uid;
 }

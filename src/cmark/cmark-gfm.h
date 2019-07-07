@@ -746,6 +746,20 @@ char *cmark_render_latex_with_mem(cmark_node *root, int options, int width, cmar
  */
 #define CMARK_OPT_UNSAFE (1 << 17)
 
+
+/** Enable superscripts
+ */
+#define CMARK_OPT_STRIKETHROUGH (1 << 18)
+
+/** Enable superscripts
+ */
+#define CMARK_OPT_SUPERSCRIPT (1 << 19)
+
+/** Enable subscripts
+ *
+ */
+#define CMARK_OPT_SUBSCRIPT (1 << 20)
+
 /**
  * ## Version information
  */
