@@ -263,6 +263,8 @@ typedef void (*cmark_opaque_free_func) (cmark_syntax_extension *extension,
                                         cmark_mem *mem,
                                         cmark_node *node);
 
+typedef void (*cmark_post_reg_callback_func) (const cmark_syntax_extension *extension);
+
 /** Free a cmark_syntax_extension.
  */
 CMARK_GFM_EXPORT

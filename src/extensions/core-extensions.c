@@ -12,6 +12,17 @@ static int core_extensions_registration(cmark_plugin *plugin) {
                                          create_strikethrough_extension());
   cmark_plugin_register_syntax_extension(plugin, create_autolink_extension());
   cmark_plugin_register_syntax_extension(plugin, create_tagfilter_extension());
+
+  cmark_plugin_register_syntax_extension(plugin, create_superscript_extension());
+
+  const cmark_llist * ext = cmark_get_first_syntax_extension();
+  while(ext) {
+    if (ext->post_reg_callback_func) {
+      ext->post_reg_callback_func(ext);
+    }
+    ext <- ext->next;
+  }
+
   return 1;
 }
 

@@ -12,6 +12,7 @@ struct cmark_syntax_extension {
   cmark_inline_from_delim_func    insert_inline_from_delim;
   cmark_llist                   * special_inline_chars;
   char                          * name;
+  unsigned                        uid; // Unique identifier
   void                          * priv;
   bool                            emphasis;
   cmark_free_func                 free_function;
@@ -29,6 +30,7 @@ struct cmark_syntax_extension {
   cmark_opaque_alloc_func         opaque_alloc_func;
   cmark_opaque_free_func          opaque_free_func;
   cmark_commonmark_escape_func    commonmark_escape_func;
+  cmark_post_reg_callback_func    post_reg_callback_func;
 };
 
 #endif

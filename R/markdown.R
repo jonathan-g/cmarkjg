@@ -16,7 +16,7 @@
 #' @aliases cmark_jg commonmark markdown
 #' @export
 #' @rdname cmark_jg
-#' @name cmark_jg
+#' @name commonmark
 #' @param text Markdown text
 #' @param sourcepos Include source position attribute in output.
 #' @param hardbreaks Treat newlines as hard line breaks. If this option is specified, hard wrapping is disabled
