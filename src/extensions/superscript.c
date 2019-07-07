@@ -27,24 +27,25 @@ static cmark_node *match(cmark_syntax_extension *self, cmark_parser *parser,
     return NULL;
 
   delims = cmark_inline_parser_scan_delimiters(
-      inline_parser, sizeof(buffer) - 1, '^',
-      &left_flanking,
-      &right_flanking, &punct_before, &punct_after);
+    inline_parser, sizeof(buffer) - 1, '^',
+    &left_flanking,
+    &right_flanking, &punct_before, &punct_after);
 
-  memset(buffer, '^', delims);
-  buffer[delims] = 0;
+    memset(buffer, '^', delims);
+    buffer[delims] = 0;
 
-  res = cmark_node_new_with_mem(CMARK_NODE_TEXT, parser->mem);
-  cmark_node_set_literal(res, buffer);
-  res->start_line = res->end_line = cmark_inline_parser_get_line(inline_parser);
-  res->start_column = cmark_inline_parser_get_column(inline_parser) - delims;
+    res = cmark_node_new_with_mem(CMARK_NODE_TEXT, parser->mem);
+    cmark_node_set_literal(res, buffer);
+    res->start_line = res->end_line = cmark_inline_parser_get_line(inline_parser);
+    res->start_column = cmark_inline_parser_get_column(inline_parser) - delims;
 
-  if (delims > 1) {
-    cmark_inline_parser_push_delimiter(inline_parser, character, left_flanking,
-                                       right_flanking, res);
-  }
+    if ((left_flanking || right_flanking) &&
+        (delims == 2 || (!(parser->options & CMARK_OPT_STRIKETHROUGH_DOUBLE_TILDE) && delims == 1))) {
+      cmark_inline_parser_push_delimiter(inline_parser, character, left_flanking,
+                                         right_flanking, res);
+    }
 
-  return res;
+    return res;
 }
 
 static delimiter *insert(cmark_syntax_extension *self, cmark_parser *parser,
@@ -87,8 +88,8 @@ static delimiter *insert(cmark_syntax_extension *self, cmark_parser *parser,
 
   cmark_inline_parser_remove_delimiter(inline_parser, opener);
 
-done:
-  return res;
+  done:
+    return res;
 }
 
 static const char *get_type_string(const cmark_syntax_extension *extension,

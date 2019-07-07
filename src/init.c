@@ -4,11 +4,11 @@
 #include "extensions/cmark-gfm-core-extensions.h"
 
 extern SEXP R_list_extensions_jg();
-extern SEXP R_render_markdown(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP R_render_markdown(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 
 static const R_CallMethodDef CallEntries[] = {
   {"R_list_extensions_jg", (DL_FUNC) &R_list_extensions_jg, 0},
-  {"R_render_markdown", (DL_FUNC) &R_render_markdown, 8},
+  {"R_render_markdown", (DL_FUNC) &R_render_markdown, 9},
   {NULL, NULL, 0}
 };
 
