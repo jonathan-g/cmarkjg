@@ -1,0 +1,14 @@
+
+include Makevars
+
+CC = $(abspath $(shell R CMD config CC))
+CPPFLAGS = $(shell R CMD config CPPFLAGS) $(PKG_CPPFLAGS)
+CFLAGS = $(shell R CMD config CFLAGS) $(PKG_CFLAGS)
+LDFLAGS = $(shell R CMD config LDFLAGS)
+
+cmark/main.o: cmark/main.c
+
+cmarkjg.exe: cmark/main.o $(STATLIB)
+	$(CC) $^ $(LDFLAGS) $(PKG_LIBS) -o $@
+
+cmarkjg: cmarkjg.exe

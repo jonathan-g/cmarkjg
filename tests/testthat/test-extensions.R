@@ -47,12 +47,12 @@ test_that("autolink", {
 })
 
 test_that("superscript", {
-  md <- "^super^ ^^super^^ ^^super^^ ^super^ ^super^"
+  md <- "script is^super^"
   expect_equal(markdown_html(md, extensions = FALSE), "<p>script is^super^</p>\n")
   expect_equal(markdown_html(md, extensions = TRUE), "<p>script is<sup>super</sup></p>\n")
 
   expect_equal(markdown_latex(md, extensions = FALSE), "script is\\^{}super\\^{}\n")
-  expect_equal(markdown_latex(md, extensions = TRUE), "script is\textsuperscript{super}\n")
+  expect_equal(markdown_latex(md, extensions = TRUE), "script is\\textsuperscript{super}\n")
 })
 
 test_that("embedded images do not get filtered", {

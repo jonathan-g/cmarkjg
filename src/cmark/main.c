@@ -114,7 +114,7 @@ int main(int argc, char *argv[]) {
   int width = 0;
   char *unparsed;
   writer_format writer = FORMAT_HTML;
-  int options = CMARK_OPT_DEFAULT;
+  int options = CMARK_OPT_DEFAULT | CMARK_OPT_STRIKETHROUGH_DOUBLE_TILDE;
   int res = 1;
 
   cmark_gfm_core_extensions_ensure_registered();

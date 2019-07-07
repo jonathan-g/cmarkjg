@@ -11,5 +11,6 @@ src/*/*.a
 src/*.o
 src/*.so
 src/*.dll
+src/*.exe
 inst/doc
 readme.html

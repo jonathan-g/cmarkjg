@@ -39,8 +39,7 @@ static cmark_node *match(cmark_syntax_extension *self, cmark_parser *parser,
     res->start_line = res->end_line = cmark_inline_parser_get_line(inline_parser);
     res->start_column = cmark_inline_parser_get_column(inline_parser) - delims;
 
-    if ((left_flanking || right_flanking) &&
-        (delims == 2 || (!(parser->options & CMARK_OPT_STRIKETHROUGH_DOUBLE_TILDE) && delims == 1))) {
+    if ((left_flanking || right_flanking) && (delims == 2 || delims == 1)) {
       cmark_inline_parser_push_delimiter(inline_parser, character, left_flanking,
                                          right_flanking, res);
     }
