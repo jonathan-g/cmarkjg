@@ -1,6 +1,7 @@
 #include "strikethrough.h"
 #include <parser.h>
 #include <render.h>
+#include <Rinternals.h>
 
 cmark_node_type CMARK_NODE_STRIKETHROUGH;
 
@@ -9,18 +10,27 @@ static cmark_node *match(cmark_syntax_extension *self, cmark_parser *parser,
                          cmark_inline_parser *inline_parser) {
   cmark_node *res = NULL;
   int left_flanking, right_flanking, punct_before, punct_after, delims;
+  int saved_offset;
   char buffer[101];
 
   if (character != '~')
     return NULL;
+
+  saved_offset = cmark_inline_parser_get_offset(inline_parser);
 
   delims = cmark_inline_parser_scan_delimiters(
     inline_parser, sizeof(buffer) - 1, '~',
     &left_flanking,
     &right_flanking, &punct_before, &punct_after);
 
-    if (delims != 2)
+    Rprintf("parsing strikethrough...\n");
+    Rprintf("  found %d delimiters.\n", delims);
+
+    if (delims != 2) {
+      Rprintf("  wrong number of delimiters; returning.\n");
+      cmark_inline_parser_set_offset(inline_parser, saved_offset);
       return NULL;
+    }
 
     memset(buffer, '~', delims);
     buffer[delims] = 0;
@@ -31,10 +41,14 @@ static cmark_node *match(cmark_syntax_extension *self, cmark_parser *parser,
     res->start_column = cmark_inline_parser_get_column(inline_parser) - delims;
 
     if ((left_flanking || right_flanking) && (delims == 2)) {
-      cmark_inline_parser_push_delimiter(inline_parser, character, left_flanking,
-                                         right_flanking, res);
+      Rprintf("  pushing delimiter.\n");
+      cmark_inline_parser_push_delimiter(inline_parser, character, self,
+                                         left_flanking, right_flanking, res);
+    } else {
+      Rprintf("  not pushing delimiter.\n");
     }
 
+    Rprintf("  returning.\n");
     return res;
 }
 
@@ -47,6 +61,8 @@ static delimiter *insert(cmark_syntax_extension *self, cmark_parser *parser,
   delimiter *res = closer->next;
 
   strikethrough = opener->inl_text;
+
+  Rprintf("inserting strikethrough node.\n");
 
   if (opener->inl_text->as.literal.len != closer->inl_text->as.literal.len)
     goto done;

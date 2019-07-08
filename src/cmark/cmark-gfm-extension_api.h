@@ -116,6 +116,7 @@ typedef struct delimiter {
   cmark_node *inl_text;
   bufsize_t length;
   unsigned char delim_char;
+  cmark_syntax_extension *ext;
   int can_open;
   int can_close;
 } delimiter;
@@ -692,6 +693,7 @@ char *cmark_inline_parser_take_while(cmark_inline_parser *parser, cmark_inline_p
 CMARK_GFM_EXPORT
 void cmark_inline_parser_push_delimiter(cmark_inline_parser *parser,
                                   unsigned char c,
+                                  cmark_syntax_extension *ext,
                                   int can_open,
                                   int can_close,
                                   cmark_node *inl_text);

@@ -490,10 +490,12 @@ static void pop_bracket(subject *subj) {
   subj->mem->free(b);
 }
 
-static void push_delimiter(subject *subj, unsigned char c, bool can_open,
-                           bool can_close, cmark_node *inl_text) {
+static void push_delimiter(subject *subj, unsigned char c,
+                           cmark_syntax_extension *ext,
+                           bool can_open, bool can_close, cmark_node *inl_text) {
   delimiter *delim = (delimiter *)subj->mem->calloc(1, sizeof(delimiter));
   delim->delim_char = c;
+  delim->ext = ext;
   delim->can_open = can_open;
   delim->can_close = can_close;
   delim->inl_text = inl_text;
@@ -522,7 +524,9 @@ static void push_bracket(subject *subj, bool image, cmark_node *inl_text) {
 }
 
 // Assumes the subject has a c at the current position.
-static cmark_node *handle_delim(subject *subj, unsigned char c, bool smart) {
+static cmark_node *handle_delim(subject *subj, unsigned char c,
+                                cmark_syntax_extension *ext,
+                                bool smart) {
   bufsize_t numdelims;
   cmark_node *inl_text;
   bool can_open, can_close;
@@ -542,7 +546,7 @@ static cmark_node *handle_delim(subject *subj, unsigned char c, bool smart) {
   inl_text = make_str(subj, subj->pos - numdelims, subj->pos - 1, contents);
 
   if ((can_open || can_close) && (!(c == '\'' || c == '"') || smart)) {
-    push_delimiter(subj, c, can_open, can_close, inl_text);
+    push_delimiter(subj, c, ext, can_open, can_close, inl_text);
   }
 
   return inl_text;
@@ -650,7 +654,8 @@ static void process_emphasis(cmark_parser *parser, subject *subj, delimiter *sta
 
   // now move forward, looking for closers, and handling each
   while (closer != NULL) {
-    cmark_syntax_extension *extension = get_extension_for_special_char(parser, closer->delim_char);
+    cmark_syntax_extension *extension =
+      closer->ext ? closer->ext : get_extension_for_special_char(parser, closer->delim_char);
     if (closer->can_close) {
       // Now look backwards for first matching opener:
       opener = closer->previous;
@@ -1320,7 +1325,7 @@ static int parse_inline(cmark_parser *parser, subject *subj, cmark_node *parent,
   case '_':
   case '\'':
   case '"':
-    new_inl = handle_delim(subj, c, (options & CMARK_OPT_SMART) != 0);
+    new_inl = handle_delim(subj, c, NULL, (options & CMARK_OPT_SMART) != 0);
     break;
   case '-':
     new_inl = handle_hyphen(subj, (options & CMARK_OPT_SMART) != 0);
@@ -1512,10 +1517,11 @@ char *cmark_inline_parser_take_while(cmark_inline_parser *parser, cmark_inline_p
 
 void cmark_inline_parser_push_delimiter(cmark_inline_parser *parser,
                                   unsigned char c,
+                                  cmark_syntax_extension *ext,
                                   int can_open,
                                   int can_close,
                                   cmark_node *inl_text) {
-  push_delimiter(parser, c, can_open != 0, can_close != 0, inl_text);
+  push_delimiter(parser, c, ext, can_open != 0, can_close != 0, inl_text);
 }
 
 void cmark_inline_parser_remove_delimiter(cmark_inline_parser *parser, delimiter *delim) {

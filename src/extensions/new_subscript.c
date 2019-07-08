@@ -1,21 +1,13 @@
 #include "subscript.h"
 #include <parser.h>
 #include <render.h>
+#include <Rinternals.h>
 
 #if 0
 #define CHECK_REGISTRY
 #endif
 
 static unsigned UID_subscript = 0;
-
-typedef enum {
-  invalid_ind = 0,
-  subscript_ind = 1,
-  strikethrough_ind
-} indicator;
-
-static const indicator subscript_i = subscript_ind;
-static const indicator strikethrough_i = strikethrough_ind;
 
 #ifdef CHECK_REGISTRY
 typedef struct ext_reg_s {
@@ -37,15 +29,26 @@ static cmark_node *match(cmark_syntax_extension *self, cmark_parser *parser,
                          cmark_inline_parser *inline_parser) {
   cmark_node *res = NULL;
   int left_flanking, right_flanking, punct_before, punct_after, delims;
+  int saved_offset;
   char buffer[101];
 
   if (character != '~')
     return NULL;
 
+  saved_offset = cmark_inline_parser_get_offset(inline_parser);
   delims = cmark_inline_parser_scan_delimiters(
     inline_parser, sizeof(buffer) - 1, '~',
     &left_flanking,
     &right_flanking, &punct_before, &punct_after);
+
+    Rprintf("parsing subscript...\n");
+    Rprintf("  found %d delimiters.\n", delims);
+
+    if (delims == 0 || delims == 2 || delims > 3) {
+      Rprintf("  wrong number of delimiters; returning.\n");
+      cmark_inline_parser_set_offset(inline_parser, saved_offset);
+      return NULL;
+    }
 
     memset(buffer, '~', delims);
     buffer[delims] = 0;
@@ -56,11 +59,14 @@ static cmark_node *match(cmark_syntax_extension *self, cmark_parser *parser,
     res->start_column = cmark_inline_parser_get_column(inline_parser) - delims;
 
     if ((left_flanking || right_flanking) && (delims >= 1 && delims <= 3)) {
+      Rprintf("  pushing delimiter.\n");
       cmark_inline_parser_push_delimiter(inline_parser, character, self,
                                          left_flanking, right_flanking, res);
-
+    } else {
+      Rprintf("  not pushing delimiter.\n");
     }
 
+    Rprintf("  returning.\n");
     return res;
 }
 
@@ -74,6 +80,8 @@ static delimiter *insert(cmark_syntax_extension *self, cmark_parser *parser,
 
   subscript = opener->inl_text;
 
+  Rprintf("inserting subscript node.\n");
+
   if (opener->inl_text->as.literal.len != closer->inl_text->as.literal.len)
     goto done;
 
@@ -81,12 +89,6 @@ static delimiter *insert(cmark_syntax_extension *self, cmark_parser *parser,
     goto done;
 
   cmark_node_set_syntax_extension(subscript, self);
-
-  if (opener->length == 2) {
-    cmark_node_set_user_data(subscript, (void *) &strikethrough_i);
-  } else {
-    cmark_node_set_user_data(subscript, (void *) &subscript_i);
-  }
 
   tmp = cmark_node_next(opener->inl_text);
 
@@ -114,25 +116,11 @@ static delimiter *insert(cmark_syntax_extension *self, cmark_parser *parser,
     return res;
 }
 
-static indicator get_node_ind(const cmark_node * node) {
-  const indicator * ind = (const indicator *) cmark_node_get_user_data(node);
-  if (ind == NULL)
-    return invalid_ind;
-  return *ind;
-}
-
 static const char *get_type_string(const cmark_syntax_extension *extension,
                                    const cmark_node *node) {
-  const char * type_string = "<unknown>";
-  if (node->type ==  CMARK_NODE_CUSTOM_INLINE  &&
-      cmark_syntax_extension_get_uid(node->extension) == UID_subscript) {
-    if (get_node_ind(node) == strikethrough_ind) {
-      type_string = "strikethrough";
-    } else {
-      type_string = "subscript";
-    }
-  }
-  return type_string;
+  return (node->type ==  CMARK_NODE_CUSTOM_INLINE  &&
+          cmark_syntax_extension_get_uid(node->extension) == UID_subscript) ?
+          "subscript": "<unknown>";
 }
 
 static int can_contain(const cmark_syntax_extension *extension, const cmark_node *node,
@@ -148,9 +136,7 @@ static int can_contain(const cmark_syntax_extension *extension, const cmark_node
 static void commonmark_render(cmark_syntax_extension *extension,
                               cmark_renderer *renderer, cmark_node *node,
                               cmark_event_type ev_type, int options) {
-  indicator ind = get_node_ind(node);
-  renderer->out(renderer, node, (ind == strikethrough_ind) ? "~~" : "~",
-                false, LITERAL);
+  renderer->out(renderer, node, "~", false, LITERAL);
 }
 
 static void latex_render(cmark_syntax_extension *extension,
@@ -158,36 +144,10 @@ static void latex_render(cmark_syntax_extension *extension,
                          cmark_event_type ev_type, int options) {
   // requires \usepackage{ulem}
   bool entering = (ev_type == CMARK_EVENT_ENTER);
-  indicator ind = get_node_ind(node);
   if (entering) {
-    renderer->out(renderer, node,
-                  (ind == strikethrough_ind) ? "\\sout{" : "\\textsubscript{",
-                                                                     false, LITERAL);
+    renderer->out(renderer, node, "\\textsubscript{", false, LITERAL);
   } else {
     renderer->out(renderer, node, "}", false, LITERAL);
-  }
-}
-
-static void man_render(cmark_syntax_extension *extension,
-                       cmark_renderer *renderer, cmark_node *node,
-                       cmark_event_type ev_type, int options) {
-  bool entering = (ev_type == CMARK_EVENT_ENTER);
-  if (get_node_ind(node) == strikethrough_ind) {
-    if (entering) {
-      renderer->cr(renderer);
-      renderer->out(renderer, node, ".ST \"", false, LITERAL);
-    } else {
-      renderer->out(renderer, node, "\"", false, LITERAL);
-      renderer->cr(renderer);
-    }
-  } else {
-#if 0  // this is essentially a no-op.
-    if (entering) {
-      renderer->out(renderer, node, "", false, LITERAL);
-    } else {
-      renderer->out(renderer, node, "", false, LITERAL);
-    }
-#endif
   }
 }
 
@@ -196,18 +156,10 @@ static void html_render(cmark_syntax_extension *extension,
                         cmark_event_type ev_type, int options) {
   bool entering = (ev_type == CMARK_EVENT_ENTER);
 
-  if (get_node_ind(node) == strikethrough_ind) {
-    if (entering) {
-      cmark_strbuf_puts(renderer->html, "<del>");
-    } else {
-      cmark_strbuf_puts(renderer->html, "</del>");
-    }
+  if (entering) {
+    cmark_strbuf_puts(renderer->html, "<sub>");
   } else {
-    if (entering) {
-      cmark_strbuf_puts(renderer->html, "<sub>");
-    } else {
-      cmark_strbuf_puts(renderer->html, "</sub>");
-    }
+    cmark_strbuf_puts(renderer->html, "</sub>");
   }
 }
 
@@ -245,7 +197,6 @@ cmark_syntax_extension *create_subscript_extension(void) {
   cmark_syntax_extension_set_can_contain_func(ext, can_contain);
   cmark_syntax_extension_set_commonmark_render_func(ext, commonmark_render);
   cmark_syntax_extension_set_latex_render_func(ext, latex_render);
-  cmark_syntax_extension_set_man_render_func(ext, man_render);
   cmark_syntax_extension_set_html_render_func(ext, html_render);
   cmark_syntax_extension_set_plaintext_render_func(ext, plaintext_render);
 
