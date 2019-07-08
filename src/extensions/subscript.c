@@ -1,7 +1,7 @@
 #include "subscript.h"
 #include <parser.h>
 #include <render.h>
-#include <Rinternals.h>
+// #include <Rinternals.h>
 
 #if 0
 #define CHECK_REGISTRY
@@ -41,11 +41,11 @@ static cmark_node *match(cmark_syntax_extension *self, cmark_parser *parser,
     &left_flanking,
     &right_flanking, &punct_before, &punct_after);
 
-    Rprintf("parsing subscript...\n");
-    Rprintf("  found %d delimiters.\n", delims);
+    // Rprintf("parsing subscript...\n");
+    // Rprintf("  found %d delimiters.\n", delims);
 
     if (delims == 0 || delims == 2 || delims > 3) {
-      Rprintf("  wrong number of delimiters; returning.\n");
+      // Rprintf("  wrong number of delimiters; returning.\n");
       cmark_inline_parser_set_offset(inline_parser, saved_offset);
       return NULL;
     }
@@ -59,14 +59,14 @@ static cmark_node *match(cmark_syntax_extension *self, cmark_parser *parser,
     res->start_column = cmark_inline_parser_get_column(inline_parser) - delims;
 
     if ((left_flanking || right_flanking) && (delims >= 1 && delims <= 3)) {
-      Rprintf("  pushing delimiter.\n");
+      // Rprintf("  pushing delimiter.\n");
       cmark_inline_parser_push_delimiter(inline_parser, character, self,
                                          left_flanking, right_flanking, res);
-    } else {
-      Rprintf("  not pushing delimiter.\n");
+      // } else {
+      // Rprintf("  not pushing delimiter.\n");
     }
 
-    Rprintf("  returning.\n");
+    // Rprintf("  returning.\n");
     return res;
 }
 
@@ -80,7 +80,7 @@ static delimiter *insert(cmark_syntax_extension *self, cmark_parser *parser,
 
   subscript = opener->inl_text;
 
-  Rprintf("inserting subscript node.\n");
+  // Rprintf("inserting subscript node.\n");
 
   if (opener->inl_text->as.literal.len != closer->inl_text->as.literal.len)
     goto done;

@@ -1,7 +1,7 @@
 #include "strikethrough.h"
 #include <parser.h>
 #include <render.h>
-#include <Rinternals.h>
+// #include <Rinternals.h>
 
 cmark_node_type CMARK_NODE_STRIKETHROUGH;
 
@@ -23,11 +23,11 @@ static cmark_node *match(cmark_syntax_extension *self, cmark_parser *parser,
     &left_flanking,
     &right_flanking, &punct_before, &punct_after);
 
-    Rprintf("parsing strikethrough...\n");
-    Rprintf("  found %d delimiters.\n", delims);
+    // Rprintf("parsing strikethrough...\n");
+    // Rprintf("  found %d delimiters.\n", delims);
 
     if (delims != 2) {
-      Rprintf("  wrong number of delimiters; returning.\n");
+      // Rprintf("  wrong number of delimiters; returning.\n");
       cmark_inline_parser_set_offset(inline_parser, saved_offset);
       return NULL;
     }
@@ -41,14 +41,14 @@ static cmark_node *match(cmark_syntax_extension *self, cmark_parser *parser,
     res->start_column = cmark_inline_parser_get_column(inline_parser) - delims;
 
     if ((left_flanking || right_flanking) && (delims == 2)) {
-      Rprintf("  pushing delimiter.\n");
+      // Rprintf("  pushing delimiter.\n");
       cmark_inline_parser_push_delimiter(inline_parser, character, self,
                                          left_flanking, right_flanking, res);
-    } else {
-      Rprintf("  not pushing delimiter.\n");
+      // } else {
+      // Rprintf("  not pushing delimiter.\n");
     }
 
-    Rprintf("  returning.\n");
+    // Rprintf("  returning.\n");
     return res;
 }
 
@@ -62,7 +62,7 @@ static delimiter *insert(cmark_syntax_extension *self, cmark_parser *parser,
 
   strikethrough = opener->inl_text;
 
-  Rprintf("inserting strikethrough node.\n");
+  // Rprintf("inserting strikethrough node.\n");
 
   if (opener->inl_text->as.literal.len != closer->inl_text->as.literal.len)
     goto done;
