@@ -2,8 +2,13 @@
 #include <parser.h>
 #include <render.h>
 
+#if 0
+#define CHECK_REGISTRY
+#endif
+
 static unsigned UID_superscript = 0;
 
+#ifdef CHECK_REGISTRY
 typedef struct ext_reg_s {
   const char * name;
   unsigned uid;
@@ -11,10 +16,12 @@ typedef struct ext_reg_s {
 
 static ext_reg compatible_extensions[] = {
   {"superscript", 0},
+  {"subscript", 0},
   {"strikethrough", 0}
 };
 
 static const size_t n_compat = sizeof(compatible_extensions) / sizeof(compatible_extensions[0]);
+#endif
 
 static cmark_node *match(cmark_syntax_extension *self, cmark_parser *parser,
                          cmark_node *parent, unsigned char character,
@@ -39,7 +46,7 @@ static cmark_node *match(cmark_syntax_extension *self, cmark_parser *parser,
     res->start_line = res->end_line = cmark_inline_parser_get_line(inline_parser);
     res->start_column = cmark_inline_parser_get_column(inline_parser) - delims;
 
-    if ((left_flanking || right_flanking) && (delims == 2 || delims == 1)) {
+    if ((left_flanking || right_flanking) && (delims <=3 && delims >= 1)) {
       cmark_inline_parser_push_delimiter(inline_parser, character, left_flanking,
                                          right_flanking, res);
     }
@@ -127,9 +134,9 @@ static void man_render(cmark_syntax_extension *extension,
   bool entering = (ev_type == CMARK_EVENT_ENTER);
   if (entering) {
     renderer->cr(renderer);
-    renderer->out(renderer, node, ".ST \"", false, LITERAL);
+    renderer->out(renderer, node, "\"^", false, LITERAL);
   } else {
-    renderer->out(renderer, node, "\"", false, LITERAL);
+    renderer->out(renderer, node, "^\"", false, LITERAL);
     renderer->cr(renderer);
   }
 }
@@ -151,6 +158,7 @@ static void plaintext_render(cmark_syntax_extension *extension,
   renderer->out(renderer, node, "^", false, LITERAL);
 }
 
+#ifdef CHECK_REGISTRY
 static bool contain_test(unsigned id) {
   for (int i = 0; i < n_compat; i++) {
     if (id == compatible_extensions[i].uid)
@@ -168,6 +176,7 @@ static void postreg_callback(const cmark_syntax_extension *self) {
     }
   }
 }
+#endif
 
 cmark_syntax_extension *create_superscript_extension(void) {
   cmark_syntax_extension *ext = cmark_syntax_extension_new("superscript");
@@ -181,7 +190,9 @@ cmark_syntax_extension *create_superscript_extension(void) {
   cmark_syntax_extension_set_html_render_func(ext, html_render);
   cmark_syntax_extension_set_plaintext_render_func(ext, plaintext_render);
 
+#ifdef CHECK_REGISTRY
   cmark_syntax_extension_set_post_reg_callback_func(ext, postreg_callback);
+#endif
 
   cmark_syntax_extension_set_match_inline_func(ext, match);
   cmark_syntax_extension_set_inline_from_delim_func(ext, insert);

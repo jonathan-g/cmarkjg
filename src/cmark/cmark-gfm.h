@@ -325,7 +325,7 @@ void cmark_iter_reset(cmark_iter *iter, cmark_node *current,
 
 /** Returns the user data of 'node'.
  */
-CMARK_GFM_EXPORT void *cmark_node_get_user_data(cmark_node *node);
+CMARK_GFM_EXPORT void *cmark_node_get_user_data(const cmark_node *node);
 
 /** Sets arbitrary user data for 'node'.  Returns 1 on success,
  * 0 on failure.
@@ -745,20 +745,6 @@ char *cmark_render_latex_with_mem(cmark_node *root, int options, int width, cmar
  * empty strings.
  */
 #define CMARK_OPT_UNSAFE (1 << 17)
-
-
-/** Enable superscripts
- */
-#define CMARK_OPT_STRIKETHROUGH (1 << 18)
-
-/** Enable superscripts
- */
-#define CMARK_OPT_SUPERSCRIPT (1 << 19)
-
-/** Enable subscripts
- *
- */
-#define CMARK_OPT_SUBSCRIPT (1 << 20)
 
 /**
  * ## Version information

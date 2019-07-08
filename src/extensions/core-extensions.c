@@ -2,6 +2,7 @@
 #include "autolink.h"
 #include "strikethrough.h"
 #include "superscript.h"
+#include "subscript.h"
 #include "table.h"
 #include "tagfilter.h"
 #include "registry.h"
@@ -9,13 +10,15 @@
 
 static int core_extensions_registration(cmark_plugin *plugin) {
   cmark_plugin_register_syntax_extension(plugin, create_table_extension());
-  cmark_plugin_register_syntax_extension(plugin,
-                                         create_strikethrough_extension());
+//  cmark_plugin_register_syntax_extension(plugin,
+//                                         create_strikethrough_extension());
   cmark_plugin_register_syntax_extension(plugin, create_autolink_extension());
   cmark_plugin_register_syntax_extension(plugin, create_tagfilter_extension());
 
   cmark_plugin_register_syntax_extension(plugin,
                                          create_superscript_extension());
+  cmark_plugin_register_syntax_extension(plugin,
+                                         create_subscript_extension());
 
   const cmark_llist * ptr = cmark_get_first_syntax_extension();
   while(ptr) {

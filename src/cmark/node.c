@@ -301,7 +301,7 @@ cmark_node *cmark_node_last_child(cmark_node *node) {
   }
 }
 
-void *cmark_node_get_user_data(cmark_node *node) {
+void *cmark_node_get_user_data(const cmark_node *node) {
   if (node == NULL) {
     return NULL;
   } else {

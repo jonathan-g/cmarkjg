@@ -1,7 +1,8 @@
 context("test-extensions")
 
 test_that("list extensions", {
-  expect_equal(list_extensions(), c("table", "strikethrough", "autolink", "tagfilter", "superscript"))
+  expect_equal(list_extensions(), c("table", "autolink", "tagfilter",
+                                    "superscript", "subscript"))
 })
 
 test_that("strikethrough", {
@@ -18,12 +19,12 @@ test_that("strikethrough", {
   library(xml2)
   doc1 <- xml_ns_strip(read_xml(markdown_xml(md, extensions = FALSE)))
   doc2 <- xml_ns_strip(read_xml(markdown_xml(md, extensions = TRUE)))
-  expect_length(xml_find_all(doc1, "//strikethrough"), 0)
-  expect_length(xml_find_all(doc2, "//strikethrough"), 1)
+  expect_length(xml_find_all(doc1, "//subscript"), 0)
+  expect_length(xml_find_all(doc2, "//subscript"), 1)
 
   md2 <- "foo ~bar~ baz"
-  expect_equal(markdown_html(md2, extensions = TRUE), "<p>foo ~bar~ baz</p>\n")
-  expect_equal(markdown_html(md2, max_strikethrough = TRUE, extensions = TRUE), "<p>foo <del>bar</del> baz</p>\n")
+  expect_equal(markdown_html(md2, extensions = FALSE), "<p>foo ~bar~ baz</p>\n")
+  expect_equal(markdown_html(md2, extensions = TRUE),  "<p>foo <sub>bar</sub> baz</p>\n")
 
 })
 
