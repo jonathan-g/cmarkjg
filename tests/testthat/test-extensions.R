@@ -19,13 +19,20 @@ test_that("strikethrough", {
   library(xml2)
   doc1 <- xml_ns_strip(read_xml(markdown_xml(md, extensions = FALSE)))
   doc2 <- xml_ns_strip(read_xml(markdown_xml(md, extensions = TRUE)))
+  expect_length(xml_find_all(doc1, "//strikethrough"), 0)
+  expect_length(xml_find_all(doc2, "//strikethrough"), 1)
+})
+
+test_that("subscript", {
+  md <- "foo ~bar~ baz"
+
+  expect_equal(markdown_html(md, extensions = FALSE), "<p>foo ~bar~ baz</p>\n")
+  expect_equal(markdown_html(md, extensions = TRUE),  "<p>foo <sub>bar</sub> baz</p>\n")
+
+  doc1 <- xml_ns_strip(read_xml(markdown_xml(md, extensions = FALSE)))
+  doc2 <- xml_ns_strip(read_xml(markdown_xml(md, extensions = TRUE)))
   expect_length(xml_find_all(doc1, "//subscript"), 0)
   expect_length(xml_find_all(doc2, "//subscript"), 1)
-
-  md2 <- "foo ~bar~ baz"
-  expect_equal(markdown_html(md2, extensions = FALSE), "<p>foo ~bar~ baz</p>\n")
-  expect_equal(markdown_html(md2, extensions = TRUE),  "<p>foo <sub>bar</sub> baz</p>\n")
-
 })
 
 test_that("autolink", {
@@ -54,6 +61,12 @@ test_that("superscript", {
 
   expect_equal(markdown_latex(md, extensions = FALSE), "script is\\^{}super\\^{}\n")
   expect_equal(markdown_latex(md, extensions = TRUE), "script is\\textsuperscript{super}\n")
+
+  library(xml2)
+  doc1 <- xml_ns_strip(read_xml(markdown_xml(md, extensions = FALSE)))
+  doc2 <- xml_ns_strip(read_xml(markdown_xml(md, extensions = TRUE)))
+  expect_length(xml_find_all(doc1, "//superscript"), 0)
+  expect_length(xml_find_all(doc2, "//superscript"), 1)
 })
 
 test_that("embedded images do not get filtered", {

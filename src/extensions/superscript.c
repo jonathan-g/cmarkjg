@@ -128,19 +128,6 @@ static void latex_render(cmark_syntax_extension *extension,
   }
 }
 
-static void man_render(cmark_syntax_extension *extension,
-                       cmark_renderer *renderer, cmark_node *node,
-                       cmark_event_type ev_type, int options) {
-  bool entering = (ev_type == CMARK_EVENT_ENTER);
-  if (entering) {
-    renderer->cr(renderer);
-    renderer->out(renderer, node, "\"^", false, LITERAL);
-  } else {
-    renderer->out(renderer, node, "^\"", false, LITERAL);
-    renderer->cr(renderer);
-  }
-}
-
 static void html_render(cmark_syntax_extension *extension,
                         cmark_html_renderer *renderer, cmark_node *node,
                         cmark_event_type ev_type, int options) {
@@ -186,7 +173,6 @@ cmark_syntax_extension *create_superscript_extension(void) {
   cmark_syntax_extension_set_can_contain_func(ext, can_contain);
   cmark_syntax_extension_set_commonmark_render_func(ext, commonmark_render);
   cmark_syntax_extension_set_latex_render_func(ext, latex_render);
-  cmark_syntax_extension_set_man_render_func(ext, man_render);
   cmark_syntax_extension_set_html_render_func(ext, html_render);
   cmark_syntax_extension_set_plaintext_render_func(ext, plaintext_render);
 
