@@ -1,13 +1,13 @@
-#include "subscript.h"
+#include "math.h"
 #include <parser.h>
 #include <render.h>
-// #include <Rinternals.h>
+#include "Rinternals.h"
 
 #if 0
 #define CHECK_REGISTRY
 #endif
 
-static unsigned UID_subscript = 0;
+static unsigned UID_math = 0;
 
 #ifdef CHECK_REGISTRY
 typedef struct ext_reg_s {
@@ -16,8 +16,8 @@ typedef struct ext_reg_s {
 } ext_reg;
 
 static ext_reg compatible_extensions[] = {
+  {"math", 0},
   {"subscript", 0},
-  {"superscript", 0},
   {"strikethrough", 0}
 };
 
@@ -29,66 +29,63 @@ static cmark_node *match(cmark_syntax_extension *self, cmark_parser *parser,
                          cmark_inline_parser *inline_parser) {
   cmark_node *res = NULL;
   int left_flanking, right_flanking, punct_before, punct_after, delims;
-  int saved_offset;
   char buffer[101];
 
-  if (character != '~')
+  if (character != '$')
     return NULL;
 
-  saved_offset = cmark_inline_parser_get_offset(inline_parser);
+  Rprintf("Parsing possible math...\n");
+
   delims = cmark_inline_parser_scan_delimiters(
-    inline_parser, sizeof(buffer) - 1, '~',
+    inline_parser, sizeof(buffer) - 1, '$',
     &left_flanking,
     &right_flanking, &punct_before, &punct_after);
 
-    // Rprintf("parsing subscript...\n");
-    // Rprintf("  found %d delimiters.\n", delims);
+  Rprintf("  found delimiter size %d. lf = %d, rf = %d, pb = %d, pa = %d.\n",
+          delims, left_flanking, right_flanking, punct_before, punct_after);
 
-    if (delims == 0 || delims == 2 || delims > 3) {
-      // Rprintf("  wrong number of delimiters; returning.\n");
-      cmark_inline_parser_set_offset(inline_parser, saved_offset);
-      return NULL;
-    }
+  memset(buffer, '$', delims);
+  buffer[delims] = 0;
 
-    memset(buffer, '~', delims);
-    buffer[delims] = 0;
+  res = cmark_node_new_with_mem(CMARK_NODE_TEXT, parser->mem);
+  cmark_node_set_literal(res, buffer);
+  res->start_line = res->end_line = cmark_inline_parser_get_line(inline_parser);
+  res->start_column = cmark_inline_parser_get_column(inline_parser) - delims;
 
-    res = cmark_node_new_with_mem(CMARK_NODE_TEXT, parser->mem);
-    cmark_node_set_literal(res, buffer);
-    res->start_line = res->end_line = cmark_inline_parser_get_line(inline_parser);
-    res->start_column = cmark_inline_parser_get_column(inline_parser) - delims;
+  if ((left_flanking != right_flanking) && (delims ==2 || delims == 1)) {
+    Rprintf("  pushing delimiter.\n");
+    cmark_inline_parser_push_delimiter(inline_parser, character, self,
+                                       left_flanking, right_flanking, res);
+  }
 
-    if ((left_flanking || right_flanking) && (delims >= 1 && delims <= 3)) {
-      // Rprintf("  pushing delimiter.\n");
-      cmark_inline_parser_push_delimiter(inline_parser, character, self,
-                                         left_flanking, right_flanking, res);
-      // } else {
-      // Rprintf("  not pushing delimiter.\n");
-    }
-
-    // Rprintf("  returning.\n");
-    return res;
+  return res;
 }
 
 static delimiter *insert(cmark_syntax_extension *self, cmark_parser *parser,
                          cmark_inline_parser *inline_parser, delimiter *opener,
                          delimiter *closer) {
-  cmark_node *subscript;
+  cmark_node *math;
   cmark_node *tmp, *next;
   delimiter *delim, *tmp_delim;
   delimiter *res = closer->next;
+  unsigned len;
 
-  subscript = opener->inl_text;
-
-  // Rprintf("inserting subscript node.\n");
+  math = opener->inl_text;
 
   if (opener->inl_text->as.literal.len != closer->inl_text->as.literal.len)
     goto done;
 
-  if (!cmark_node_set_type(subscript, CMARK_NODE_CUSTOM_INLINE))
+  if (!cmark_node_set_type(math, CMARK_NODE_CUSTOM_INLINE))
     goto done;
 
-  cmark_node_set_syntax_extension(subscript, self);
+  cmark_node_set_syntax_extension(math, self);
+
+  len = (unsigned)(opener->length);
+
+  Rprintf("Inserting delimiter $ of length %d.\n", len);
+
+  if (len > 2)
+    len = 0;
 
   tmp = cmark_node_next(opener->inl_text);
 
@@ -96,11 +93,11 @@ static delimiter *insert(cmark_syntax_extension *self, cmark_parser *parser,
     if (tmp == closer->inl_text)
       break;
     next = cmark_node_next(tmp);
-    cmark_node_append_child(subscript, tmp);
+    cmark_node_append_child(math, tmp);
     tmp = next;
   }
 
-  subscript->end_column = closer->inl_text->start_column + closer->inl_text->as.literal.len - 1;
+  math->end_column = closer->inl_text->start_column + closer->inl_text->as.literal.len - 1;
   cmark_node_free(closer->inl_text);
 
   delim = closer;
@@ -118,25 +115,20 @@ static delimiter *insert(cmark_syntax_extension *self, cmark_parser *parser,
 
 static const char *get_type_string(cmark_syntax_extension *extension,
                                    cmark_node *node) {
-  return (node->type ==  CMARK_NODE_CUSTOM_INLINE  &&
-          cmark_syntax_extension_get_uid(node->extension) == UID_subscript) ?
-          "subscript": "<unknown>";
+  return (node->type == CMARK_NODE_CUSTOM_INLINE  &&
+          cmark_syntax_extension_get_uid(node->extension) == UID_math) ?
+          "math" : "<unknown>";
 }
 
 static int can_contain(cmark_syntax_extension *extension, cmark_node *node,
                        cmark_node_type child_type) {
-  if (node->type != CMARK_NODE_CUSTOM_INLINE ||
-      cmark_syntax_extension_get_uid(node->extension) != UID_subscript)
-    return false;
-
   return CMARK_NODE_TYPE_INLINE_P(child_type);
 }
-
 
 static void commonmark_render(cmark_syntax_extension *extension,
                               cmark_renderer *renderer, cmark_node *node,
                               cmark_event_type ev_type, int options) {
-  renderer->out(renderer, node, "~", false, LITERAL);
+  renderer->out(renderer, node, "$", false, LITERAL);
 }
 
 static void latex_render(cmark_syntax_extension *extension,
@@ -145,9 +137,9 @@ static void latex_render(cmark_syntax_extension *extension,
   // requires \usepackage{ulem}
   bool entering = (ev_type == CMARK_EVENT_ENTER);
   if (entering) {
-    renderer->out(renderer, node, "\\textsubscript{", false, LITERAL);
+    renderer->out(renderer, node, "\\(", false, LITERAL);
   } else {
-    renderer->out(renderer, node, "}", false, LITERAL);
+    renderer->out(renderer, node, "\\)", false, LITERAL);
   }
 }
 
@@ -155,18 +147,17 @@ static void html_render(cmark_syntax_extension *extension,
                         cmark_html_renderer *renderer, cmark_node *node,
                         cmark_event_type ev_type, int options) {
   bool entering = (ev_type == CMARK_EVENT_ENTER);
-
   if (entering) {
-    cmark_strbuf_puts(renderer->html, "<sub>");
+    cmark_strbuf_puts(renderer->html, "\\(");
   } else {
-    cmark_strbuf_puts(renderer->html, "</sub>");
+    cmark_strbuf_puts(renderer->html, "\\)");
   }
 }
 
 static void plaintext_render(cmark_syntax_extension *extension,
                              cmark_renderer *renderer, cmark_node *node,
                              cmark_event_type ev_type, int options) {
-  renderer->out(renderer, node, "~", false, LITERAL);
+  renderer->out(renderer, node, "$", false, LITERAL);
 }
 
 #ifdef CHECK_REGISTRY
@@ -189,8 +180,8 @@ static void postreg_callback(cmark_syntax_extension *self) {
 }
 #endif
 
-cmark_syntax_extension *create_subscript_extension(void) {
-  cmark_syntax_extension *ext = cmark_syntax_extension_new("subscript");
+cmark_syntax_extension *create_math_extension(void) {
+  cmark_syntax_extension *ext = cmark_syntax_extension_new("math");
   cmark_llist *special_chars = NULL;
 
   cmark_syntax_extension_set_get_type_string_func(ext, get_type_string);
@@ -208,12 +199,12 @@ cmark_syntax_extension *create_subscript_extension(void) {
   cmark_syntax_extension_set_inline_from_delim_func(ext, insert);
 
   cmark_mem *mem = cmark_get_default_mem_allocator();
-  special_chars = cmark_llist_append(mem, special_chars, (void *)'~');
+  special_chars = cmark_llist_append(mem, special_chars, (void *)'$');
   cmark_syntax_extension_set_special_inline_chars(ext, special_chars);
 
   cmark_syntax_extension_set_emphasis(ext, 1);
 
-  UID_subscript = cmark_syntax_extension_get_uid(ext);
+  UID_math = cmark_syntax_extension_get_uid(ext);
 
   return ext;
 }
