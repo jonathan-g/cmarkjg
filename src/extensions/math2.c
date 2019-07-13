@@ -79,7 +79,9 @@ static cmark_node *match(cmark_syntax_extension *self, cmark_parser *parser,
     res = cmark_node_new_with_mem(CMARK_NODE_TEXT, parser->mem);
     cmark_node_set_literal(res, buffer);
 
+    cmark_node_set_string_content(res, cmark_chunk_to_cstr(parser->mem, cmark_inline_parser_get_chunk(inline_parser)));
     res->start_line = res->end_line = cmark_inline_parser_get_line(inline_parser);
+    res->internal_offset = cmark_inline_parser_get_offset(inline_parser);
     res->start_column = cmark_inline_parser_get_column(inline_parser) - delims;
 
     // left_flanking or right_flanking is true, but not both.
@@ -92,115 +94,47 @@ static cmark_node *match(cmark_syntax_extension *self, cmark_parser *parser,
     return res;
 }
 
-static void transform_text_to_math(cmark_syntax_extension * ext, cmark_node * node) {
-  if (! node || ! ext) {
-    Rprintf("!! ERROR: NULL pointer pased to transform_text_to_math.\n");
-    return;
-  }
-  if (cmark_node_get_type(node) != CMARK_NODE_TEXT) {
-    trace_node_info("!! ERROR transforming text to math: ", node, true, false, true, true);
-    return;
-  }
-  if (cmark_syntax_extension_get_uid(ext) != UID_math) {
-    Rprintf("!! ERROR: transform_text_to_math called without math extension.\n");
-    return;
-  }
-
-  trace_node_info("    ++ -- Transforming text to math: ", node, true, true, true, true);
-
-  if (node->as.literal.alloc && node->as.literal.len > 0) {
-    Rprintf("             Converting literal \"%s\"[%d] to string content.\n",
-            node->as.literal.data, node->as.literal.len);
-    cmark_node_set_string_content(node, (char *) node->as.literal.data);
-  } else {
-    const char * literal = cmark_node_get_literal(node);
-    if (literal) {
-      unsigned lit_len = strlen(literal);
-      Rprintf("             Getting literal \"%s\"[%d] and converting to string content.\n",
-              literal, lit_len);
-      cmark_node_set_string_content(node, literal);
-    }
-    else {
-      Rprintf("             No literal data.\n");
-    }
-  }
-  cmark_node_set_type(node, CMARK_NODE_CUSTOM_INLINE);
-  cmark_node_set_syntax_extension(node, ext);
-  cmark_node_set_user_data(node, (void *)(math_types + 3));
-
-  trace_node_info("    ++ -- -- post-transform: ", node, true, true, true, true);
-}
-
-// Remove the given node and insert its children, if any, where the node was.
-// Return:
-//   A pointer to the next node in the sequence, after removing this node and
-//   inserting its children.
-//
-//   Thus, if there are children, return a pointer to the first child.
-//   If there are no children, return a pointer to the next node after this one.
-//
-static cmark_node * raise_children(cmark_node * node) {
-  cmark_node *prev, *next, *parent, *first_child, *last_child, *ptr;
-
-  prev = node->prev;
-  next = node->next;
-  parent = node->parent;
-  first_child = node->first_child;
-  last_child = node->last_child;
-
-  if (!parent) {
-    return next;
-  }
-
-  cmark_node_unlink(node);
-
-  if (! first_child || ! last_child) {
-    // no children to raise.
-    cmark_node_free(node);
-    return next;
-  }
-
-  node->first_child = NULL;
-  node->last_child = NULL;
-
-  ptr = first_child;
-  while(ptr) {
-    ptr->parent = parent;
-    ptr = ptr->next;
-  }
-
-  if (prev) {
-    prev->next = first_child;
-    first_child->prev = prev;
-  } else {
-    parent->first_child = first_child;
-  }
-
-  if (next) {
-    next->prev = last_child;
-    last_child->next = next;
-  } else {
-    parent->last_child = last_child;
-  }
-
-  cmark_node_free(node);
-
-  return first_child;
-}
-
 static delimiter *insert(cmark_syntax_extension *self, cmark_parser *parser,
                          cmark_inline_parser *inline_parser, delimiter *opener,
                          delimiter *closer) {
-  cmark_node *math;
-  cmark_node *tmp, *next;
-  delimiter *delim, *tmp_delim;
+  cmark_node *math = NULL, *cmath = NULL;
+  cmark_node *tmp = NULL, *next = NULL;
+  delimiter *delim = NULL, *tmp_delim = NULL;
   delimiter *res = closer->next;
   unsigned len;
-  const char * emph_str = NULL;
+  const char * target = NULL;
+  cmark_chunk *parser_input = NULL;
+  cmark_chunk iptchk;
+  bufsize_t start_pos, end_pos;
+
+  start_pos = opener->inl_text->internal_offset;
+  end_pos = closer->inl_text->internal_offset - closer->length;
 
   math = opener->inl_text;
+  cmath = closer->inl_text;
+
+  parser_input = cmark_inline_parser_get_chunk(inline_parser);
+  iptchk = cmark_chunk_dup(parser_input, start_pos, end_pos - start_pos);
+  target = cmark_chunk_to_cstr(parser->mem, &iptchk);
+  cmark_chunk_free(parser->mem, &iptchk);
 
   Rprintf("Inserting delimiter $ of length %d.\n", opener->length);
+  Rprintf("  opener: content = \"%s\", literal = \"%s\", offset = %d.\n",
+          cmark_node_get_string_content(math),
+          cmark_node_get_literal(math),
+          math->internal_offset);
+  Rprintf("  closer: content = \"%s\", literal = \"%s\", offset = %d.\n",
+          cmark_node_get_string_content(cmath),
+          cmark_node_get_literal(cmath),
+          cmath->internal_offset);
+
+  if (parser_input->len > 0) {
+    const char *input = cmark_chunk_to_cstr(parser->mem, parser_input);
+    bufsize_t inp_len = parser_input->len;
+    Rprintf("  input = \"%s\", length = %d, start = %d, end = %d\n",
+            input, inp_len, start_pos, end_pos);
+    Rprintf("  target = \"%s\"\n", cmark_chunk_to_cstr(parser->mem, &iptchk));
+    }
 
   if (opener->inl_text->as.literal.len != closer->inl_text->as.literal.len) {
     Rprintf("  mismatched opener/closer. returning.\n");
@@ -220,6 +154,7 @@ static delimiter *insert(cmark_syntax_extension *self, cmark_parser *parser,
     len = 0;
 
   cmark_node_set_user_data(math, (void *)(math_types + len));
+  cmark_node_set_on_exit(math, target);
 
   tmp = cmark_node_next(opener->inl_text);
 
@@ -228,37 +163,10 @@ static delimiter *insert(cmark_syntax_extension *self, cmark_parser *parser,
     if (tmp == closer->inl_text)
       break;
     trace_node_info("  ++ ++ next: ", tmp, true, true, true, true);
-    switch ((uint16_t)cmark_node_get_type(tmp)) {
-    case CMARK_NODE_EMPH:
-    case CMARK_NODE_STRONG:
-      emph_str = cmark_node_get_user_data(tmp);
-      trace_node_info("  ++  -- emph/strong node: ", tmp, true, true, false, false);
-      if (emph_str) {
-        Rprintf(", user data = \"%s\".\n", emph_str);
-      } else {
-        Rprintf(", no user data.\n");
-      }
-    case CMARK_NODE_FOOTNOTE_DEFINITION:
-    case CMARK_NODE_FOOTNOTE_REFERENCE:
-      tmp = raise_children(tmp);
-      continue;
-    }
     next = cmark_node_next(tmp);
-    cmark_node_append_child(math, tmp);
+    cmark_node_unlink(tmp);
+    cmark_node_free(tmp);
     tmp = next;
-  }
-  trace_node_info("  ++ done. math: ", math, true, false, true, true);
-  Rprintf("  ++  consolidating children...\n");
-  cmark_consolidate_text_nodes(math);
-
-  tmp = cmark_node_first_child(math);
-  trace_node_info("  ++ transforming text nodes starting with ", tmp, true, true, true, true);
-  while(tmp) {
-    trace_node_info("  ++ ++ next: ", tmp, true, true, true, true);
-    if (cmark_node_get_type(tmp) == CMARK_NODE_TEXT) {
-      transform_text_to_math(self, tmp);
-      tmp = cmark_node_next(tmp);
-    }
   }
   trace_node_info("  ++ done. math: ", math, true, false, true, true);
 
@@ -359,32 +267,10 @@ static void latex_render(cmark_syntax_extension *extension,
   Rprintf(".\n");
 
   if (t == math_content) {
-    if (entering) {
-      const char * literal = NULL;
-      if (node->as.literal.alloc && node->as.literal.len > 0) {
-        literal = (const char *)node->as.literal.data;
-      }
-      const char * content = cmark_node_get_string_content(node);
-      if (literal == NULL) {
-        Rprintf("++    No literal content.\n");
-      }
-      if (content == NULL) {
-        Rprintf("++    No string content.\n");
-      }
-      if (literal) {
-        Rprintf("++    Rendering literal, length %d, allocated = %s.\n",
-                node->as.literal.len, node->as.literal.alloc ? "TRUE" : "FALSE");
-        renderer->out(renderer, node, literal, false, LITERAL);
-      } else if (content) {
-        Rprintf("++    Rendering string content, length %d (of %d).\n",
-                node->content.size, node->content.asize);
-        renderer->out(renderer, node, content, false, LITERAL);
-      }
-    } else {
-      trace_node_info("++    Not rendering except at opening: ", node, true, true, true, true);
-    }
+    Rprintf("!! ERROR: THere should not be any math_content nodes.\n");
   } else if (entering) {
     renderer->out(renderer, node, delim, false, LITERAL);
+    renderer->out(renderer, node, cmark_node_get_on_exit(node), false, LITERAL);
   } else {
     renderer->out(renderer, node, delim, false, LITERAL);
   }
@@ -415,40 +301,14 @@ static void html_render(cmark_syntax_extension *extension,
   Rprintf("++ html render math delim node: entering = %s.\n", entering ? "TRUE" : "FALSE");
   trace_node_info("++ ++ html render: ", node, true, true, true, false);
   Rprintf(", math type = %d: %s", t, get_math_type_string(t));
-  Rprintf(", literal: len = %d, alloc = %s", node->as.literal.len,
-          node->as.literal.alloc ? "TRUE" : "FALSE");
-
-  if (node->as.literal.alloc) {
-    Rprintf(", literal content = \"%s\"", node->as.literal.data);
-  }
   Rprintf(".\n");
 
   if (t == math_content) {
-    if (entering) {
-      const char * literal = NULL;
-      if (node->as.literal.alloc && node->as.literal.len > 0) {
-        literal = (const char *)node->as.literal.data;
-      }
-      const char * content = cmark_node_get_string_content(node);
-      if (literal == NULL) {
-        Rprintf("++    No literal content.\n");
-      }
-      if (content == NULL) {
-        Rprintf("++    No string content.\n");
-      }
-      if (literal) {
-        Rprintf("++    Rendering literal, length %d, allocated = %s.\n",
-                node->as.literal.len, node->as.literal.alloc ? "TRUE" : "FALSE");
-        cmark_strbuf_puts(renderer->html, literal);
-      } else if (content) {
-        Rprintf("++    Rendering string content, length %d (of %d).\n",
-                node->content.size, node->content.asize);
-        cmark_strbuf_puts(renderer->html, content);      }
-    } else {
-      trace_node_info("++    Not rendering except at opening: ", node, true, true, true, true);
-    }
+    Rprintf("!! ERROR: THere should not be any math_content nodes.\n");
   } else if (entering) {
     cmark_strbuf_puts(renderer->html, delim);
+    cmark_strbuf_put(renderer->html, node->as.custom.on_exit.data,
+                     node->as.custom.on_exit.len);
   } else {
     cmark_strbuf_puts(renderer->html, delim);
   }
