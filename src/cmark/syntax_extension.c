@@ -9,9 +9,10 @@ extern cmark_mem CMARK_DEFAULT_MEM_ALLOCATOR;
 
 static cmark_mem *_mem = &CMARK_DEFAULT_MEM_ALLOCATOR;
 
+#ifdef REGISTRY_CHECKS
 static void dummy_postreg_callback(cmark_syntax_extension *extension) {
-
 }
+#endif
 
 void cmark_syntax_extension_free(cmark_mem *mem, cmark_syntax_extension *extension) {
   if (extension->free_function && extension->priv) {
@@ -29,7 +30,9 @@ cmark_syntax_extension *cmark_syntax_extension_new(const char *name) {
   res->name = (char *) _mem->calloc(1, sizeof(char) * (strlen(name)) + 1);
   strcpy(res->name, name);
   res->uid = ++UID_counter;
+#ifdef REGISTRY_CHECKS
   res->post_reg_callback_func = dummy_postreg_callback;
+#endif
   return res;
 }
 

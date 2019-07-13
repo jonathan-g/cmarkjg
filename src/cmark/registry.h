@@ -1,3 +1,4 @@
+#ifdef REGISTRY_CHECKS
 #ifndef CMARK_REGISTRY_H
 #define CMARK_REGISTRY_H
 
@@ -23,4 +24,5 @@ const cmark_llist *cmark_get_first_syntax_extension(void);
 }
 #endif
 
+#endif
 #endif

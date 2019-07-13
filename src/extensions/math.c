@@ -9,10 +9,6 @@
 #include <Rinternals.h>
 #endif
 
-#if 0
-#define CHECK_REGISTRY
-#endif
-
 static unsigned UID_math = 0;
 
 typedef enum{
@@ -43,7 +39,7 @@ const char * get_math_type_string(math_type type) {
   return "<invalid math type>";
 }
 
-#ifdef CHECK_REGISTRY
+#ifdef REGISTRY_CHECKS
 typedef struct ext_reg_s {
   const char * name;
   unsigned uid;
@@ -376,7 +372,7 @@ static void plaintext_render(cmark_syntax_extension *extension,
   renderer->out(renderer, node, "", false, LITERAL);
 }
 
-#ifdef CHECK_REGISTRY
+#ifdef REGISTRY_CHECKS
 static bool contain_test(unsigned id) {
   for (int i = 0; i < n_compat; i++) {
     if (id == compatible_extensions[i].uid)
@@ -407,7 +403,7 @@ cmark_syntax_extension *create_math_extension(void) {
   cmark_syntax_extension_set_html_render_func(ext, html_render);
   cmark_syntax_extension_set_plaintext_render_func(ext, plaintext_render);
 
-#ifdef CHECK_REGISTRY
+#ifdef REGISTRY_CHECKS
   cmark_syntax_extension_set_post_reg_callback_func(ext, postreg_callback);
 #endif
 
