@@ -1,4 +1,3 @@
-#ifdef REGISTRY_CHECKS
 #ifndef CMARK_REGISTRY_H
 #define CMARK_REGISTRY_H
 
@@ -18,11 +17,12 @@ void cmark_release_plugins(void);
 CMARK_GFM_EXPORT
 cmark_llist *cmark_list_syntax_extensions(cmark_mem *mem);
 
+#ifdef REGISTRY_CHECKS
 const cmark_llist *cmark_get_first_syntax_extension(void);
+#endif
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif
 #endif

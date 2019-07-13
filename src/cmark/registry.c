@@ -62,6 +62,8 @@ cmark_syntax_extension *cmark_find_syntax_extension(const char *name) {
   return NULL;
 }
 
+#ifdef REGISTRY_CHECKS
 const cmark_llist *cmark_get_first_syntax_extension(void) {
   return syntax_extensions;
 }
+#endif

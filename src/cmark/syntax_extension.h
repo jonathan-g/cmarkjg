@@ -30,7 +30,9 @@ struct cmark_syntax_extension {
   cmark_opaque_alloc_func         opaque_alloc_func;
   cmark_opaque_free_func          opaque_free_func;
   cmark_commonmark_escape_func    commonmark_escape_func;
+#ifdef REGISTRY_CHECKS
   cmark_post_reg_callback_func    post_reg_callback_func;
+#endif
 };
 
 #endif

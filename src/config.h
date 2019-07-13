@@ -5,6 +5,10 @@
 extern "C" {
 #endif
 
+#if 0
+#define REGISTRY_CHECKS
+#endif
+
 #define HAVE_STDBOOL_H
 
 #ifdef HAVE_STDBOOL_H

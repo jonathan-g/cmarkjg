@@ -132,6 +132,7 @@ void cmark_syntax_extension_set_postprocess_func(cmark_syntax_extension *extensi
   extension->postprocess_func = func;
 }
 
+#ifdef REGISTRY_CHECKS
 void cmark_syntax_extension_set_post_reg_callback_func(cmark_syntax_extension *extension,
                                                       cmark_post_reg_callback_func func) {
   extension->post_reg_callback_func = func;
@@ -141,6 +142,7 @@ cmark_post_reg_callback_func
   cmark_syntax_extension_get_post_reg_callback_func(cmark_syntax_extension *extension) {
   return extension->post_reg_callback_func;
 }
+#endif
 
 void cmark_syntax_extension_set_private(cmark_syntax_extension *extension,
                                         void *priv,
