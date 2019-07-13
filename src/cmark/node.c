@@ -4,8 +4,11 @@
 #include "config.h"
 #include "node.h"
 #include "syntax_extension.h"
+
+#ifdef DEBUG
 #include "cmark_trace.h"
 #include <Rinternals.h>
+#endif
 
 static void S_node_unlink(cmark_node *node);
 
@@ -60,6 +63,7 @@ const char *decode_node_type(cmark_node_type type) {
   return "<unknown>";
 }
 
+#ifdef DEBUG
 static unsigned count_node_children(const cmark_node *node) {
   const cmark_node *child;
   unsigned ctr = 0;
@@ -163,6 +167,7 @@ void trace_node_info(const char * msg, cmark_node * node,
     }
   }
 }
+#endif
 
 bool cmark_node_can_contain_type(cmark_node *node, cmark_node_type child_type) {
   if (child_type == CMARK_NODE_DOCUMENT) {

@@ -3,8 +3,11 @@
 #include <render.h>
 #include <node.h>
 #include <syntax_extension.h>
+
+#ifdef DEBUG
 #include <cmark_trace.h>
 #include <Rinternals.h>
+#endif
 
 #if 0
 #define CHECK_REGISTRY
@@ -63,15 +66,19 @@ static cmark_node *match(cmark_syntax_extension *self, cmark_parser *parser,
   if (character != '$')
     return NULL;
 
+#ifdef DEBUG
   Rprintf("Matching possible math...\n");
+#endif
 
   delims = cmark_inline_parser_scan_delimiters(
     inline_parser, sizeof(buffer) - 1, '$',
     &left_flanking,
     &right_flanking, &punct_before, &punct_after);
 
+#ifdef DEBUG
     Rprintf("  found delimiter size %d. lf = %d, rf = %d, pb = %d, pa = %d.\n",
             delims, left_flanking, right_flanking, punct_before, punct_after);
+#endif
 
     memset(buffer, '$', delims);
     buffer[delims] = 0;
@@ -86,7 +93,9 @@ static cmark_node *match(cmark_syntax_extension *self, cmark_parser *parser,
 
     // left_flanking or right_flanking is true, but not both.
     if ((left_flanking != right_flanking) && (delims == 1 || delims == 2)) {
+#ifdef DEBUG
       Rprintf("  pushing delimiter.\n");
+#endif
       cmark_inline_parser_push_delimiter(inline_parser, character, self,
                                          left_flanking, right_flanking, res);
     }
@@ -97,7 +106,10 @@ static cmark_node *match(cmark_syntax_extension *self, cmark_parser *parser,
 static delimiter *insert(cmark_syntax_extension *self, cmark_parser *parser,
                          cmark_inline_parser *inline_parser, delimiter *opener,
                          delimiter *closer) {
-  cmark_node *math = NULL, *cmath = NULL;
+  cmark_node *math = NULL;
+#ifdef DEBUG
+  cmark_node *cmath = NULL;
+#endif
   cmark_node *tmp = NULL, *next = NULL;
   delimiter *delim = NULL, *tmp_delim = NULL;
   delimiter *res = closer->next;
@@ -111,13 +123,16 @@ static delimiter *insert(cmark_syntax_extension *self, cmark_parser *parser,
   end_pos = closer->inl_text->internal_offset - closer->length;
 
   math = opener->inl_text;
+#ifdef DEBUG
   cmath = closer->inl_text;
+#endif
 
   parser_input = cmark_inline_parser_get_chunk(inline_parser);
   iptchk = cmark_chunk_dup(parser_input, start_pos, end_pos - start_pos);
   target = cmark_chunk_to_cstr(parser->mem, &iptchk);
   cmark_chunk_free(parser->mem, &iptchk);
 
+#ifdef DEBUG
   Rprintf("Inserting delimiter $ of length %d.\n", opener->length);
   Rprintf("  opener: content = \"%s\", literal = \"%s\", offset = %d.\n",
           cmark_node_get_string_content(math),
@@ -135,14 +150,19 @@ static delimiter *insert(cmark_syntax_extension *self, cmark_parser *parser,
             input, inp_len, start_pos, end_pos);
     Rprintf("  target = \"%s\"\n", cmark_chunk_to_cstr(parser->mem, &iptchk));
     }
+#endif
 
   if (opener->inl_text->as.literal.len != closer->inl_text->as.literal.len) {
+#ifdef DEBUG
     Rprintf("  mismatched opener/closer. returning.\n");
+#endif
     goto done;
   }
 
   if (!cmark_node_set_type(math, CMARK_NODE_CUSTOM_INLINE)) {
+#ifdef DEBUG
     Rprintf("  could not set node type. returning.\n");
+#endif
     goto done;
   }
 
@@ -158,38 +178,51 @@ static delimiter *insert(cmark_syntax_extension *self, cmark_parser *parser,
 
   tmp = cmark_node_next(opener->inl_text);
 
+#ifdef DEBUG
   trace_node_info("  ++ forward: starting with ", tmp, true, true, true, true);
+#endif
   while (tmp) {
     if (tmp == closer->inl_text)
       break;
+#ifdef DEBUG
     trace_node_info("  ++ ++ next: ", tmp, true, true, true, true);
+#endif
     next = cmark_node_next(tmp);
     cmark_node_unlink(tmp);
     cmark_node_free(tmp);
     tmp = next;
   }
+#ifdef DEBUG
   trace_node_info("  ++ done. math: ", math, true, false, true, true);
+#endif
 
   math->end_column = closer->inl_text->start_column + closer->inl_text->as.literal.len - 1;
+#ifdef DEBUG
   Rprintf("  ++ Columns: start = %d, end = %d\n", math->start_column, math->end_column);
   trace_node_info("  ++ ++ inl_text: ", closer->inl_text, true, true, true, true);
+#endif
   cmark_node_free(closer->inl_text);
 
   delim = closer;
+#ifdef DEBUG
   trace_node_info("  ++ backward: starting with ", delim->inl_text, true, true, true, true);
+#endif
   while (delim != NULL && delim != opener) {
     tmp_delim = delim->previous;
+#ifdef DEBUG
     if (tmp_delim && tmp_delim->inl_text) {
       trace_node_info("  ++ ++ prev: ", tmp_delim->inl_text, true, true, true, true);
     }
+#endif
     cmark_inline_parser_remove_delimiter(inline_parser, delim);
     delim = tmp_delim;
   }
+#ifdef DEBUG
   if (delim == opener) {
     trace_node_info("  ++ opener: ", delim->inl_text, true, false, true, true);
   }
   Rprintf("  ++ done.\n");
-
+#endif
   cmark_inline_parser_remove_delimiter(inline_parser, opener);
 
   done:
@@ -207,12 +240,13 @@ static int can_contain(cmark_syntax_extension *extension, cmark_node *node,
                        cmark_node_type child_type) {
   bool retval = false;
 
+#ifdef DEBUG
   trace_node_info("      ++  can_contain: parent (", node, false, false, true, false);
   Rprintf(", class = %d: %s), child = %d: %s\n",
           * (const math_type *) cmark_node_get_user_data(node),
           get_math_type_string(* (const math_type *) cmark_node_get_user_data(node)),
           child_type, decode_node_type(child_type));
-
+#endif
 
   if (node->type != CMARK_NODE_CUSTOM_INLINE ||
       node->extension != extension ||
@@ -222,7 +256,10 @@ static int can_contain(cmark_syntax_extension *extension, cmark_node *node,
     retval = CMARK_NODE_TYPE_INLINE_P(child_type);
   }
 
+#ifdef DEBUG
   Rprintf("      ++    result = %s.\n", retval ? "TRUE" : "FALSE");
+#endif
+
   return retval;
 }
 
@@ -241,20 +278,25 @@ static void latex_render(cmark_syntax_extension *extension,
   math_type t;
   const char * delim;
 
+#ifdef DEBUG
   if (! extension) {
     Rprintf("latex_render: NULL extension in math.\n");
   }
   if (! node) {
     Rprintf("latex_render: NULL node.\n");
   }
+#endif
 
   if (! cmark_node_get_user_data(node)) {
+#ifdef DEBUG
     Rprintf("!! ERROR: Null user_data in node.\n");
+#endif
     return;
   }
   t = *(const math_type *) cmark_node_get_user_data(node);
   delim = (t == block_math) ? "$$" : (t == inline_math) ? "$" : "";
 
+#ifdef DEBUG
   Rprintf("++ latex render math delim node: entering = %s.\n", entering ? "TRUE" : "FALSE");
   trace_node_info("++ ++ latex render: ", node, true, true, true, false);
   Rprintf(", math type = %d: %s", t, get_math_type_string(t));
@@ -265,16 +307,22 @@ static void latex_render(cmark_syntax_extension *extension,
     Rprintf(", literal content = \"%s\"", node->as.literal.data);
   }
   Rprintf(".\n");
+#endif
 
   if (t == math_content) {
+#ifdef DEBUG
     Rprintf("!! ERROR: THere should not be any math_content nodes.\n");
+#endif
   } else if (entering) {
     renderer->out(renderer, node, delim, false, LITERAL);
     renderer->out(renderer, node, cmark_node_get_on_exit(node), false, LITERAL);
   } else {
     renderer->out(renderer, node, delim, false, LITERAL);
   }
+
+#ifdef DEBUG
   Rprintf("++ done rendering math delim mode.\n");
+#endif
 }
 
 static void html_render(cmark_syntax_extension *extension,
@@ -284,27 +332,35 @@ static void html_render(cmark_syntax_extension *extension,
   math_type t;
   const char * delim;
 
+#ifdef DEBUG
   if (! extension) {
     Rprintf("html_render: NULL extension in math.\n");
   }
   if (! node) {
     Rprintf("html_render: NULL node.\n");
   }
+#endif
 
   if (! cmark_node_get_user_data(node)) {
+#ifdef DEBUG
     Rprintf("!! ERROR: Null user_data in node.\n");
+#endif
     return;
   }
   t = *(const math_type *) cmark_node_get_user_data(node);
   delim = (t == block_math) ? "$$" : (t == inline_math) ? "$" : "";
 
+#ifdef DEBUG
   Rprintf("++ html render math delim node: entering = %s.\n", entering ? "TRUE" : "FALSE");
   trace_node_info("++ ++ html render: ", node, true, true, true, false);
   Rprintf(", math type = %d: %s", t, get_math_type_string(t));
   Rprintf(".\n");
+#endif
 
   if (t == math_content) {
+#ifdef DEBUG
     Rprintf("!! ERROR: THere should not be any math_content nodes.\n");
+#endif
   } else if (entering) {
     cmark_strbuf_puts(renderer->html, delim);
     cmark_strbuf_put(renderer->html, node->as.custom.on_exit.data,
