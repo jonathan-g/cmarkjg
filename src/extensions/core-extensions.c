@@ -20,6 +20,7 @@ static int core_extensions_registration(cmark_plugin *plugin) {
   cmark_plugin_register_syntax_extension(plugin, create_superscript_extension());
   cmark_plugin_register_syntax_extension(plugin, create_subscript_extension());
 
+#ifdef REGISTRY_CHECKS
   const cmark_llist * ptr = cmark_get_first_syntax_extension();
   while(ptr) {
     cmark_syntax_extension *ext = ptr->data;
@@ -32,6 +33,7 @@ static int core_extensions_registration(cmark_plugin *plugin) {
     }
     ptr = ptr->next;
   }
+#endif
 
   return 1;
 }

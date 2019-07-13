@@ -396,6 +396,7 @@ CMARK_GFM_EXPORT
 void cmark_syntax_extension_set_postprocess_func(cmark_syntax_extension *extension,
                                                  cmark_postprocess_func func);
 
+#ifdef REGISTRY_CHECKS
 /** See the documentation for 'cmark_syntax_extension'
  */
 CMARK_GFM_EXPORT
@@ -406,6 +407,7 @@ CMARK_GFM_EXPORT
  */
 CMARK_GFM_EXPORT
   cmark_post_reg_callback_func cmark_syntax_extension_get_post_reg_callback_func(cmark_syntax_extension *extension);
+#endif
 
 /** See the documentation for 'cmark_syntax_extension'
  */
