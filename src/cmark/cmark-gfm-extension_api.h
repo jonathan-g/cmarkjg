@@ -217,11 +217,11 @@ typedef int (*cmark_match_block_func)        (cmark_syntax_extension *extension,
                                        int len,
                                        cmark_node *container);
 
-typedef const char *(*cmark_get_type_string_func) (const cmark_syntax_extension *extension,
-                                                   const cmark_node *node);
+typedef const char *(*cmark_get_type_string_func) (cmark_syntax_extension *extension,
+                                                   cmark_node *node);
 
-typedef int (*cmark_can_contain_func) (const cmark_syntax_extension *extension,
-                                       const cmark_node *node,
+typedef int (*cmark_can_contain_func) (cmark_syntax_extension *extension,
+                                       cmark_node *node,
                                        cmark_node_type child);
 
 typedef int (*cmark_contains_inlines_func) (cmark_syntax_extension *extension,
@@ -264,7 +264,7 @@ typedef void (*cmark_opaque_free_func) (cmark_syntax_extension *extension,
                                         cmark_mem *mem,
                                         cmark_node *node);
 
-typedef void (*cmark_post_reg_callback_func) (const cmark_syntax_extension *extension);
+typedef void (*cmark_post_reg_callback_func) (cmark_syntax_extension *extension);
 
 /** Free a cmark_syntax_extension.
  */
@@ -388,7 +388,7 @@ void cmark_syntax_extension_set_private(cmark_syntax_extension *extension,
 /** See the documentation for 'cmark_syntax_extension'
  */
 CMARK_GFM_EXPORT
-void *cmark_syntax_extension_get_private(const cmark_syntax_extension *extension);
+void *cmark_syntax_extension_get_private(cmark_syntax_extension *extension);
 
 /** See the documentation for 'cmark_syntax_extension'
  */
@@ -405,7 +405,7 @@ CMARK_GFM_EXPORT
 /** See the documentation for 'cmark_syntax_extension'
  */
 CMARK_GFM_EXPORT
-  cmark_post_reg_callback_func cmark_syntax_extension_get_post_reg_callback_func(const cmark_syntax_extension *extension);
+  cmark_post_reg_callback_func cmark_syntax_extension_get_post_reg_callback_func(cmark_syntax_extension *extension);
 
 /** See the documentation for 'cmark_syntax_extension'
  */
@@ -420,7 +420,7 @@ void cmark_syntax_extension_set_opaque_free_func(cmark_syntax_extension *extensi
                                                  cmark_opaque_free_func func);
 
 CMARK_GFM_EXPORT
-  unsigned cmark_syntax_extension_get_uid(const cmark_syntax_extension *extension);
+  unsigned cmark_syntax_extension_get_uid(cmark_syntax_extension *extension);
 
 /** See the documentation for 'cmark_syntax_extension'
  */

@@ -5,9 +5,169 @@
 #include "node.h"
 #include "syntax_extension.h"
 
+#ifdef DEBUG
+#include "cmark_trace.h"
+#include <Rinternals.h>
+#endif
+
 static void S_node_unlink(cmark_node *node);
 
 #define NODE_MEM(node) cmark_node_mem(node)
+
+const char *decode_node_type(cmark_node_type type) {
+  switch ((uint16_t)type) {
+  case CMARK_NODE_NONE:
+    return "none";
+  case CMARK_NODE_DOCUMENT:
+    return "document";
+  case CMARK_NODE_BLOCK_QUOTE:
+    return "block_quote";
+  case CMARK_NODE_LIST:
+    return "list";
+  case CMARK_NODE_ITEM:
+    return "item";
+  case CMARK_NODE_CODE_BLOCK:
+    return "code_block";
+  case CMARK_NODE_HTML_BLOCK:
+    return "html_block";
+  case CMARK_NODE_CUSTOM_BLOCK:
+    return "custom_block";
+  case CMARK_NODE_PARAGRAPH:
+    return "paragraph";
+  case CMARK_NODE_HEADING:
+    return "heading";
+  case CMARK_NODE_THEMATIC_BREAK:
+    return "thematic_break";
+  case CMARK_NODE_TEXT:
+    return "text";
+  case CMARK_NODE_SOFTBREAK:
+    return "softbreak";
+  case CMARK_NODE_LINEBREAK:
+    return "linebreak";
+  case CMARK_NODE_CODE:
+    return "code";
+  case CMARK_NODE_HTML_INLINE:
+    return "html_inline";
+  case CMARK_NODE_CUSTOM_INLINE:
+    return "custom_inline";
+  case CMARK_NODE_EMPH:
+    return "emph";
+  case CMARK_NODE_STRONG:
+    return "strong";
+  case CMARK_NODE_LINK:
+    return "link";
+  case CMARK_NODE_IMAGE:
+    return "image";
+  }
+
+  return "<unknown>";
+}
+
+#ifdef DEBUG
+static unsigned count_node_children(const cmark_node *node) {
+  const cmark_node *child;
+  unsigned ctr = 0;
+
+  if (node == NULL)
+    return ctr;
+
+  child = node->first_child;
+  while(child) {
+    ++ ctr;
+    child = child->next;
+  }
+  return ctr;
+}
+
+static unsigned find_node_pos(const cmark_node *node) {
+  const cmark_node *ptr;
+  unsigned idx = 0;
+
+  if (node == NULL) {
+    return idx;
+  }
+
+  ptr = node;
+  while(ptr) {
+    ++ idx;
+    ptr = ptr->prev;
+  }
+
+  return idx;
+}
+
+static unsigned count_node_siblings(const cmark_node *node) {
+  const cmark_node *ptr;
+  unsigned ctr = 0;
+
+  if (node == NULL) {
+    return ctr;
+  }
+
+  ptr = node;
+  while(ptr) {
+    ++ctr;
+    ptr = ptr->prev;
+  }
+  ptr = node->next;
+  while(ptr) {
+    ++ctr;
+    ptr = ptr->next;
+  }
+
+  return ctr;
+}
+
+static unsigned node_depth(const cmark_node *node) {
+  const cmark_node *ptr;
+  unsigned depth = 0;
+
+  if (node == NULL) {
+    return depth;
+  }
+  ptr = node;
+  while (ptr) {
+    ++ depth;
+    ptr = ptr->parent;
+  }
+  return depth;
+}
+
+void trace_node_info(const char * msg, cmark_node * node,
+                     bool content, bool literal, bool links, bool cr) {
+  if (node == NULL) {
+    Rprintf("%s node is NULL.");
+  } else {
+    const char * ext_type = "NULL";
+    if (node->extension && node->extension->get_type_string_func) {
+      ext_type = node->extension->get_type_string_func(node->extension, node);
+    }
+    Rprintf("%s node type %d (\"%s\"), extension %s",
+    msg, cmark_node_get_type(node), cmark_node_get_type_string(node), ext_type);
+    if (content && cmark_node_get_type(node) != CMARK_NODE_DOCUMENT) {
+      Rprintf(", content = \"%s\"", cmark_node_get_string_content(node));
+      if (literal && cmark_node_get_type(node) == CMARK_NODE_TEXT) {
+        if (!node->as.literal.alloc) {
+          Rprintf(", literal = NULL");
+        } else {
+          Rprintf(", literal = \"%s\"", node->as.literal.data);
+        }
+      }
+    }
+    if (links) {
+      Rprintf(", %u siblings (pos = %u), %u children, %s parent, depth = %u",
+              count_node_siblings(node), find_node_pos(node),
+              count_node_children(node),
+              node->parent ? "has a" : "does not have a",
+              node_depth(node)
+      );
+    }
+    if (cr) {
+      Rprintf("\n");
+    }
+  }
+}
+#endif
 
 bool cmark_node_can_contain_type(cmark_node *node, cmark_node_type child_type) {
   if (child_type == CMARK_NODE_DOCUMENT) {
@@ -213,52 +373,7 @@ const char *cmark_node_get_type_string(cmark_node *node) {
     return node->extension->get_type_string_func(node->extension, node);
   }
 
-  switch (node->type) {
-  case CMARK_NODE_NONE:
-    return "none";
-  case CMARK_NODE_DOCUMENT:
-    return "document";
-  case CMARK_NODE_BLOCK_QUOTE:
-    return "block_quote";
-  case CMARK_NODE_LIST:
-    return "list";
-  case CMARK_NODE_ITEM:
-    return "item";
-  case CMARK_NODE_CODE_BLOCK:
-    return "code_block";
-  case CMARK_NODE_HTML_BLOCK:
-    return "html_block";
-  case CMARK_NODE_CUSTOM_BLOCK:
-    return "custom_block";
-  case CMARK_NODE_PARAGRAPH:
-    return "paragraph";
-  case CMARK_NODE_HEADING:
-    return "heading";
-  case CMARK_NODE_THEMATIC_BREAK:
-    return "thematic_break";
-  case CMARK_NODE_TEXT:
-    return "text";
-  case CMARK_NODE_SOFTBREAK:
-    return "softbreak";
-  case CMARK_NODE_LINEBREAK:
-    return "linebreak";
-  case CMARK_NODE_CODE:
-    return "code";
-  case CMARK_NODE_HTML_INLINE:
-    return "html_inline";
-  case CMARK_NODE_CUSTOM_INLINE:
-    return "custom_inline";
-  case CMARK_NODE_EMPH:
-    return "emph";
-  case CMARK_NODE_STRONG:
-    return "strong";
-  case CMARK_NODE_LINK:
-    return "link";
-  case CMARK_NODE_IMAGE:
-    return "image";
-  }
-
-  return "<unknown>";
+  return(decode_node_type(node->type));
 }
 
 cmark_node *cmark_node_next(cmark_node *node) {
@@ -301,7 +416,7 @@ cmark_node *cmark_node_last_child(cmark_node *node) {
   }
 }
 
-void *cmark_node_get_user_data(const cmark_node *node) {
+void *cmark_node_get_user_data(cmark_node *node) {
   if (node == NULL) {
     return NULL;
   } else {
