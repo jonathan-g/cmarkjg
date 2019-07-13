@@ -325,7 +325,7 @@ void cmark_iter_reset(cmark_iter *iter, cmark_node *current,
 
 /** Returns the user data of 'node'.
  */
-CMARK_GFM_EXPORT void *cmark_node_get_user_data(const cmark_node *node);
+CMARK_GFM_EXPORT void *cmark_node_get_user_data(cmark_node *node);
 
 /** Sets arbitrary user data for 'node'.  Returns 1 on success,
  * 0 on failure.

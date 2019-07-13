@@ -11,6 +11,12 @@
 #include "scanners.h"
 #include "render.h"
 #include "syntax_extension.h"
+#include "cmark-gfm-extension_api.h"
+
+#ifdef DEBUG
+#include <cmark_trace.h>
+#include <Rinternals.h>
+#endif
 
 #define OUT(s, wrap, escaping) renderer->out(renderer, node, s, wrap, escaping)
 #define LIT(s) renderer->out(renderer, node, s, false, LITERAL)
@@ -21,7 +27,14 @@
 static CMARK_INLINE void outc(cmark_renderer *renderer, cmark_node *node,
                               cmark_escaping escape,
                               int32_t c, unsigned char nextc) {
+#ifdef DEBUG
+  Rprintf("--latex outc, escaping = %d (LITERAL = %d), c = %d: '%c'.\n", (unsigned) escape, (unsigned) LITERAL, c, (unsigned char) c);
+#endif
+
   if (escape == LITERAL) {
+#ifdef DEBUG
+    Rprintf("  --rendering literal %d = '%c'.\n", c, (unsigned char) c);
+#endif
     cmark_render_code_point(renderer, c);
     return;
   }
@@ -233,6 +246,11 @@ static int S_render_node(cmark_renderer *renderer, cmark_node *node,
     return 1;
   }
 
+#ifdef DEBUG
+  trace_node_info("++ rendering in latex ", node, true, false, true, true);
+#endif
+
+
   switch (node->type) {
   case CMARK_NODE_DOCUMENT:
     break;
@@ -380,6 +398,9 @@ static int S_render_node(cmark_renderer *renderer, cmark_node *node,
     break;
 
   case CMARK_NODE_CUSTOM_INLINE:
+#ifdef DEBUG
+    Rprintf("..rendering custom inline...\n");
+#endif
     OUT(entering ? cmark_node_get_on_enter(node) : cmark_node_get_on_exit(node),
         false, LITERAL);
     break;

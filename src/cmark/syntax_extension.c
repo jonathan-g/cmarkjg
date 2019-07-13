@@ -9,7 +9,7 @@ extern cmark_mem CMARK_DEFAULT_MEM_ALLOCATOR;
 
 static cmark_mem *_mem = &CMARK_DEFAULT_MEM_ALLOCATOR;
 
-static void dummy_postreg_callback(const cmark_syntax_extension *extension) {
+static void dummy_postreg_callback(cmark_syntax_extension *extension) {
 
 }
 
@@ -135,7 +135,7 @@ void cmark_syntax_extension_set_post_reg_callback_func(cmark_syntax_extension *e
 }
 
 cmark_post_reg_callback_func
-  cmark_syntax_extension_get_post_reg_callback_func(const cmark_syntax_extension *extension) {
+  cmark_syntax_extension_get_post_reg_callback_func(cmark_syntax_extension *extension) {
   return extension->post_reg_callback_func;
 }
 
@@ -146,7 +146,7 @@ void cmark_syntax_extension_set_private(cmark_syntax_extension *extension,
   extension->free_function = free_func;
 }
 
-void *cmark_syntax_extension_get_private(const cmark_syntax_extension *extension) {
+void *cmark_syntax_extension_get_private(cmark_syntax_extension *extension) {
     return extension->priv;
 }
 
@@ -165,6 +165,6 @@ void cmark_syntax_extension_set_commonmark_escape_func(cmark_syntax_extension *e
   extension->commonmark_escape_func = func;
 }
 
-unsigned cmark_syntax_extension_get_uid(const cmark_syntax_extension *extension) {
+unsigned cmark_syntax_extension_get_uid(cmark_syntax_extension *extension) {
   return extension->uid;
 }

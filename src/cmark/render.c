@@ -7,6 +7,11 @@
 #include "node.h"
 #include "syntax_extension.h"
 
+#ifdef DEBUG
+#include <cmark_trace.h>
+#include <Rinternals.h>
+#endif
+
 static CMARK_INLINE void S_cr(cmark_renderer *renderer) {
   if (renderer->need_cr < 1) {
     renderer->need_cr = 1;
@@ -33,6 +38,12 @@ static void S_out(cmark_renderer *renderer, cmark_node *node,
 
   cmark_syntax_extension *ext = NULL;
   cmark_node *n = node;
+
+#ifdef DEBUG
+  trace_node_info("++  rendering in render ", node, true, false, true, false);
+  Rprintf(", escape = %d\n", (unsigned) escape);
+#endif
+
   while (n && !ext) {
     ext = n->extension;
     if (!ext)
