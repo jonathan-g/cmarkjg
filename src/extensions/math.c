@@ -262,9 +262,13 @@ static int can_contain(cmark_syntax_extension *extension, cmark_node *node,
 static void commonmark_render(cmark_syntax_extension *extension,
                               cmark_renderer *renderer, cmark_node *node,
                               cmark_event_type ev_type, int options) {
+  bool entering = (ev_type == CMARK_EVENT_ENTER);
   math_type t = * (const math_type *) cmark_node_get_user_data(node);
   const char * delim = (t == block_math) ? "$$" : (t == inline_math) ? "$" : "";
   renderer->out(renderer, node, delim, false, LITERAL);
+  if (entering) {
+    renderer->out(renderer, node, cmark_node_get_on_exit(node), false, LITERAL);
+  }
 }
 
 static void latex_render(cmark_syntax_extension *extension,
@@ -305,15 +309,9 @@ static void latex_render(cmark_syntax_extension *extension,
   Rprintf(".\n");
 #endif
 
-  if (t == math_content) {
-#ifdef DEBUG
-    Rprintf("!! ERROR: THere should not be any math_content nodes.\n");
-#endif
-  } else if (entering) {
-    renderer->out(renderer, node, delim, false, LITERAL);
+  renderer->out(renderer, node, delim, false, LITERAL);
+  if (entering) {
     renderer->out(renderer, node, cmark_node_get_on_exit(node), false, LITERAL);
-  } else {
-    renderer->out(renderer, node, delim, false, LITERAL);
   }
 
 #ifdef DEBUG
@@ -353,23 +351,21 @@ static void html_render(cmark_syntax_extension *extension,
   Rprintf(".\n");
 #endif
 
-  if (t == math_content) {
-#ifdef DEBUG
-    Rprintf("!! ERROR: THere should not be any math_content nodes.\n");
-#endif
-  } else if (entering) {
-    cmark_strbuf_puts(renderer->html, delim);
+  cmark_strbuf_puts(renderer->html, delim);
+  if (entering) {
     cmark_strbuf_put(renderer->html, node->as.custom.on_exit.data,
                      node->as.custom.on_exit.len);
-  } else {
-    cmark_strbuf_puts(renderer->html, delim);
   }
 }
 
 static void plaintext_render(cmark_syntax_extension *extension,
                              cmark_renderer *renderer, cmark_node *node,
                              cmark_event_type ev_type, int options) {
+  bool entering = (ev_type == CMARK_EVENT_ENTER);
   renderer->out(renderer, node, "", false, LITERAL);
+  if (entering) {
+    renderer->out(renderer, node, cmark_node_get_on_exit(node), false, LITERAL);
+  }
 }
 
 #ifdef REGISTRY_CHECKS
