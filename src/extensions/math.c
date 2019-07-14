@@ -324,7 +324,14 @@ static void html_render(cmark_syntax_extension *extension,
                         cmark_event_type ev_type, int options) {
   bool entering = (ev_type == CMARK_EVENT_ENTER);
   math_type t;
-  const char * delim;
+  struct delim_s {
+    const char *entering;
+    const char *leaving;
+  } delims[] = {
+    {"\\(", "\\)"}, // inline
+    {"$$", "$$"}, // block
+    {"", ""} // content
+  }, *delim;
 
 #ifdef DEBUG
   if (! extension) {
@@ -342,7 +349,8 @@ static void html_render(cmark_syntax_extension *extension,
     return;
   }
   t = *(const math_type *) cmark_node_get_user_data(node);
-  delim = (t == block_math) ? "$$" : (t == inline_math) ? "$" : "";
+  delim = (t == inline_math) ? delims :
+    (t == block_math) ? delims + 1 : delims + 2;
 
 #ifdef DEBUG
   Rprintf("++ html render math delim node: entering = %s.\n", entering ? "TRUE" : "FALSE");
@@ -351,7 +359,7 @@ static void html_render(cmark_syntax_extension *extension,
   Rprintf(".\n");
 #endif
 
-  cmark_strbuf_puts(renderer->html, delim);
+  cmark_strbuf_puts(renderer->html, entering ? delim->entering : delim->leaving);
   if (entering) {
     cmark_strbuf_put(renderer->html, node->as.custom.on_exit.data,
                      node->as.custom.on_exit.len);
